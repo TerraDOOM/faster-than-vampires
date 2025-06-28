@@ -45,7 +45,7 @@ pub(super) fn plugin(app: &mut App) {
 fn unpause(mut next_pause: ResMut<NextState<Pause>>) {
     next_pause.set(Pause(false));
 }
-'
+
 fn pause(mut next_pause: ResMut<NextState<Pause>>) {
     next_pause.set(Pause(true));
 }

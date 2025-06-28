@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use avian2d::position;
+use avian2d::prelude::*;
 use bevy::prelude::*;
 
 use crate::{asset_tracking::LoadResource, PausableSystems};
@@ -32,7 +32,7 @@ pub(super) fn plugin(app: &mut App) {
 
 #[derive(Component)]
 pub struct Enemy;
-pub fn gen_enemy(ship: Ship, assets: &EntityAssets) -> impl Bundle {
+pub fn gen_enemy(ship: Ship, assets: &EntityAssets, init_velocity: Vec2) -> impl Bundle {
     // A texture atlas is a way to split a single image into a grid of related images.
     // You can learn more in this example: https://github.com/bevyengine/bevy/blob/latest/examples/2d/texture_atlas.rs
 
@@ -43,10 +43,13 @@ pub fn gen_enemy(ship: Ship, assets: &EntityAssets) -> impl Bundle {
                 ShipType::EmpireGoon => assets.empire_goon.clone(),
                 _ => assets.empire_goon.clone(),
             },
-            custom_size: Some(Vec2 { x: 50.0, y: 50.0 }),
+            custom_size: Some(Vec2 { x: 32.0, y: 32.0 }),
             ..default()
         },
         Transform::from_xyz(ship.position.x, ship.position.y, 0.0),
+        RigidBody::Dynamic,
+        Collider::circle(32.0),
+        LinearVelocity(init_velocity),
     )
 }
 
@@ -60,7 +63,7 @@ pub fn gen_goon(assets: &EntityAssets) -> impl Bundle {
         weapons: Vec::new(),
     };
 
-    (gen_enemy(ship, assets), EntityGoon);
+    (gen_enemy(ship, assets, Vec2::new(0.0, 0.0)), EntityGoon);
 }
 
 #[derive(Component)]
@@ -68,14 +71,17 @@ pub struct EntityAsteroid {
     health: u32,
 }
 
-pub fn gen_asteroid(assets: &EntityAssets, position: Vec2, velocity: Vec2) -> impl Bundle {
+pub fn gen_asteroid(assets: &EntityAssets, position: Vec2, init_velocity: Vec2) -> impl Bundle {
     let asteroid = Ship {
         shiptype: ShipType::Asteroid,
         position: position,
         lifetime: Instant::now(),
         weapons: Vec::new(),
     };
-    (gen_enemy(asteroid, assets), EntityAsteroid { health: 3 })
+    (
+        gen_enemy(asteroid, assets, init_velocity),
+        EntityAsteroid { health: 3 },
+    )
 }
 
 pub fn process_goon_ai(goons: Query<&mut Transform, With<EntityGoon>>) {

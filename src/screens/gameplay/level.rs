@@ -92,19 +92,15 @@ pub fn world_update(
     if 0 == rng.gen_range(0..10) {
         println!("Spawned enemy");
 
+        let angle = (rng.gen_range(0..360) as f32 / 180.0 * 3.14) as f32;
+        let position = Vec2::new(angle.sin(), angle.cos()) * 500.0;
+
         commands.spawn((
             Name::new("Goon"),
             Transform::default(),
             Visibility::default(),
             StateScoped(Screen::Gameplay),
-            children![gen_asteroid(
-                &entity_assets,
-                Vec2::new(
-                    rng.gen_range(-1000..1000) as f32,
-                    rng.gen_range(-1000..1000) as f32
-                ),
-                Vec2::new(rng.gen_range(0..10) as f32, rng.gen_range(0..10) as f32)
-            )],
+            children![gen_asteroid(&entity_assets, position, -position / 30.0)],
         ));
     }
 }
