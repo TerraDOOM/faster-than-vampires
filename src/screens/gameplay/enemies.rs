@@ -2,6 +2,8 @@ use std::time::Instant;
 
 use bevy::prelude::*;
 
+use crate::asset_tracking::LoadResource;
+
 #[repr(usize)]
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub enum ShipType {
@@ -19,11 +21,53 @@ pub struct Ship {
     pub weapons: Vec<()>,
 }
 
+pub(super) fn plugin(app: &mut App) {
+    app.register_type::<EntityAssets>();
+    app.load_resource::<EntityAssets>();
+}
+
 #[derive(Component)]
 pub struct Enemy;
 
-pub fn gen_enemy(ship: Ship) -> impl Bundle {
+pub fn gen_enemy(ship: Ship, assets: &EntityAssets) -> impl Bundle {
     // A texture atlas is a way to split a single image into a grid of related images.
     // You can learn more in this example: https://github.com/bevyengine/bevy/blob/latest/examples/2d/texture_atlas.rs
-    (Name::new("Enemy"), Enemy)
+
+    (
+        Name::new("Enemy"),
+        Enemy,
+        Sprite {
+            image: match ship.shiptype {
+                ShipType::EmpireGoon => assets.empire_goon.clone(),
+                _ => assets.empire_goon.clone(),
+            },
+            custom_size: Some(Vec2 { x: 50.0, y: 50.0 }),
+            ..default()
+        },
+    )
+}
+
+#[derive(Resource, Asset, Clone, Reflect)]
+#[reflect(Resource)]
+pub struct EntityAssets {
+    #[dependency]
+    flagship: Handle<Image>,
+    #[dependency]
+    empire_goon: Handle<Image>,
+    #[dependency]
+    pirate_ship: Handle<Image>,
+    #[dependency]
+    outpost: Handle<Image>,
+}
+
+impl FromWorld for EntityAssets {
+    fn from_world(world: &mut World) -> Self {
+        let assets = world.resource::<AssetServer>();
+        Self {
+            flagship: assets.load("images/mascot.png"),
+            empire_goon: assets.load("images/mascot.png"),
+            pirate_ship: assets.load("images/mascot.png"),
+            outpost: assets.load("images/mascot.png"),
+        }
+    }
 }

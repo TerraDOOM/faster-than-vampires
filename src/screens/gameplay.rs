@@ -10,6 +10,8 @@ use crate::{menus::Menu, screens::Screen, Pause};
 use level::spawn_level;
 
 pub(super) fn plugin(app: &mut App) {
+    app.add_plugins((level::plugin, player::plugin, movement::plugin,enemies::plugin));
+
     app.add_systems(OnEnter(Screen::Gameplay), spawn_level);
 
     // Toggle pause on key press.
@@ -34,7 +36,7 @@ pub(super) fn plugin(app: &mut App) {
         unpause.run_if(in_state(Screen::Gameplay)),
     );
 
-    app.add_plugins((level::plugin, player::plugin, movement::plugin));
+
 }
 
 fn unpause(mut next_pause: ResMut<NextState<Pause>>) {
