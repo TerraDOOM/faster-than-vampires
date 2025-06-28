@@ -4,6 +4,7 @@ mod level;
 mod movement;
 mod player;
 
+use avian2d::prelude::Gravity;
 use bevy::{input::common_conditions::input_just_pressed, prelude::*, ui::Val::*};
 
 use crate::{menus::Menu, screens::Screen, Pause};
@@ -40,6 +41,8 @@ pub(super) fn plugin(app: &mut App) {
         OnEnter(Menu::None),
         unpause.run_if(in_state(Screen::Gameplay)),
     );
+
+    app.insert_resource(Gravity(Vec2::ZERO));
 }
 
 fn unpause(mut next_pause: ResMut<NextState<Pause>>) {
