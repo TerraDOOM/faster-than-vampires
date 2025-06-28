@@ -24,6 +24,13 @@ pub struct Ship {
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<EntityAssets>();
     app.load_resource::<EntityAssets>();
+
+    app.add_systems(
+        Update,
+        record_player_directional_input
+            .in_set(AppSystems::RecordInput)
+            .in_set(PausableSystems),
+    );
 }
 
 #[derive(Component)]
