@@ -41,6 +41,7 @@ pub fn gen_enemy(ship: Ship, assets: &EntityAssets, init_velocity: Vec2) -> impl
         Sprite {
             image: match ship.shiptype {
                 ShipType::EmpireGoon => assets.empire_goon.clone(),
+                ShipType::Asteroid => assets.asteroid.clone(),
                 _ => assets.empire_goon.clone(),
             },
             custom_size: Some(Vec2 { x: 32.0, y: 32.0 }),
@@ -113,7 +114,7 @@ impl FromWorld for EntityAssets {
             empire_goon: assets.load("images/mascot.png"),
             pirate_ship: assets.load("images/mascot.png"),
             outpost: assets.load("images/mascot.png"),
-            asteroid: assets.load("images/mascot.png"),
+            asteroid: assets.load("images/entities/Astroid 1 .png"),
         }
     }
 }
