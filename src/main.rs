@@ -11,6 +11,7 @@ mod dev_tools;
 mod menus;
 mod screens;
 mod theme;
+mod touhou;
 
 use bevy::{asset::AssetMetaCheck, prelude::*};
 
