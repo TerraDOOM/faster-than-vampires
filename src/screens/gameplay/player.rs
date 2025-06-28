@@ -46,7 +46,7 @@ pub fn gen_player(
             image: player_assets.ducky.clone(),
             ..default()
         },
-        Transform::from_scale(Vec2::splat(8.0).extend(1.0)),
+        Transform::from_scale(Vec2::splat(2.0).extend(1.0)),
         MovementController {
             max_speed,
             ..default()
