@@ -13,6 +13,8 @@
 //! purposes. If you want to move the player in a smoother way,
 //! consider using a [fixed timestep](https://github.com/bevyengine/bevy/blob/main/examples/movement/physics_in_fixed_timestep.rs).
 
+use std::f32::consts::PI;
+
 use bevy::{prelude::*, window::PrimaryWindow};
 
 use crate::{AppSystems, PausableSystems};
@@ -42,6 +44,7 @@ pub struct MovementController {
     /// Maximum speed in world units per second.
     /// 1 world unit = 1 pixel when using the default 2D camera and no physics engine.
     pub max_speed: f32,
+    pub angle: f32,
 }
 
 impl Default for MovementController {
@@ -50,17 +53,25 @@ impl Default for MovementController {
             intent: Vec2::ZERO,
             // 400 pixels per second is a nice default, but we can still vary this per character.
             max_speed: 400.0,
+            angle: 0.0,
         }
     }
 }
 
 fn apply_movement(
     time: Res<Time>,
-    mut movement_query: Query<(&MovementController, &mut Transform)>,
+    mut movement_query: Query<(&mut MovementController, &mut Transform)>,
 ) {
-    for (controller, mut transform) in &mut movement_query {
-        let velocity = controller.max_speed * controller.intent;
+    const ROATION_SPEED: f32 = 0.8;
+    for (mut controller, mut transform) in &mut movement_query {
+        let rotation = -controller.intent.x * ROATION_SPEED * time.delta_secs();
+        controller.angle += rotation;
+        let velocity = Vec2::from_angle(controller.angle + PI / 2.0)
+            * controller.max_speed
+            * controller.intent.y;
         transform.translation += velocity.extend(0.0) * time.delta_secs();
+        transform.rotation = Quat::default();
+        transform.rotate_z(controller.angle);
     }
 }
 

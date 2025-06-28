@@ -24,6 +24,9 @@ pub(super) fn plugin(app: &mut App) {
     );
 }
 
+#[derive(Component)]
+pub struct ThrusterUpgrade;
+
 /// The player character.
 pub fn gen_player(
     max_speed: f32,
@@ -98,7 +101,7 @@ impl FromWorld for PlayerAssets {
         let assets = world.resource::<AssetServer>();
         Self {
             ducky: assets.load_with_settings(
-                "images/ducky.png",
+                "images/entities/Flight.png",
                 |settings: &mut ImageLoaderSettings| {
                     // Use `nearest` image sampling to preserve pixel art style.
                     settings.sampler = ImageSampler::nearest();

@@ -28,6 +28,10 @@ pub(super) fn plugin(app: &mut App) {
 pub struct LevelAssets {
     #[dependency]
     music: Handle<AudioSource>,
+    #[dependency]
+    background: Handle<Image>,
+    #[dependency]
+    planet1: Handle<Image>,
 }
 
 impl FromWorld for LevelAssets {
@@ -35,6 +39,8 @@ impl FromWorld for LevelAssets {
         let assets = world.resource::<AssetServer>();
         Self {
             music: assets.load("audio/music/Fluffing A Duck.ogg"),
+            background: assets.load("images/level/deeper_deeper_galaxy.png"),
+            planet1: assets.load("images/mascot.png"),
         }
     }
 }
