@@ -13,7 +13,10 @@ use crate::{
     },
 };
 
-use super::player::{gen_player, PlayerAssets};
+use super::{
+    enemies::gen_goon,
+    player::{gen_player, PlayerAssets},
+};
 
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<LevelAssets>();
@@ -55,9 +58,9 @@ pub fn spawn_level(
                 Name::new("Gameplay Music"),
                 music(level_assets.music.clone())
             ),
-            gen_enemy(
+            gen_goon(
                 Ship {
-                    shiptype: ShipType::Flagship,
+                    shiptype: ShipType::EmpireGoon,
                     position: (32.0, 32.0),
                     lifetime: Instant::now(),
                     weapons: Vec::new()

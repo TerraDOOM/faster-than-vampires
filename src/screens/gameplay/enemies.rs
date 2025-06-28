@@ -2,7 +2,7 @@ use std::time::Instant;
 
 use bevy::prelude::*;
 
-use crate::asset_tracking::LoadResource;
+use crate::{asset_tracking::LoadResource, PausableSystems};
 
 #[repr(usize)]
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
@@ -25,12 +25,7 @@ pub(super) fn plugin(app: &mut App) {
     app.register_type::<EntityAssets>();
     app.load_resource::<EntityAssets>();
 
-    app.add_systems(
-        Update,
-        record_player_directional_input
-            .in_set(AppSystems::RecordInput)
-            .in_set(PausableSystems),
-    );
+    app.add_systems(Update, process_goon_ai.in_set(PausableSystems));
 }
 
 #[derive(Component)]
@@ -52,6 +47,19 @@ pub fn gen_enemy(ship: Ship, assets: &EntityAssets) -> impl Bundle {
             ..default()
         },
     )
+}
+
+#[derive(Component)]
+struct EntityGoon;
+
+pub fn gen_goon(ship: Ship, assets: &EntityAssets) -> impl Bundle {
+    (gen_enemy(ship, assets), EntityGoon)
+}
+
+pub fn process_goon_ai(goons: Query<&mut Transform, With<EntityGoon>>) {
+    for mut goon_pos in goons {
+        goon_pos.translation.x += 1.0;
+    }
 }
 
 #[derive(Resource, Asset, Clone, Reflect)]
