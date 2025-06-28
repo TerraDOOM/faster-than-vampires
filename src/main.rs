@@ -46,7 +46,6 @@ impl Plugin for AppPlugin {
         app.add_plugins((
             asset_tracking::plugin,
             audio::plugin,
-            demo::plugin,
             #[cfg(feature = "dev")]
             dev_tools::plugin,
             menus::plugin,
