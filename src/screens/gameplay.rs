@@ -4,13 +4,19 @@ mod level;
 mod movement;
 mod player;
 
+use avian2d::prelude::Gravity;
 use bevy::{input::common_conditions::input_just_pressed, prelude::*, ui::Val::*};
 
 use crate::{menus::Menu, screens::Screen, Pause};
 use level::spawn_level;
 
 pub(super) fn plugin(app: &mut App) {
-    app.add_plugins((level::plugin, player::plugin, movement::plugin,enemies::plugin));
+    app.add_plugins((
+        level::plugin,
+        player::plugin,
+        movement::plugin,
+        enemies::plugin,
+    ));
 
     app.add_systems(OnEnter(Screen::Gameplay), spawn_level);
 
@@ -28,8 +34,6 @@ pub(super) fn plugin(app: &mut App) {
                     .and(not(in_state(Menu::None)))
                     .and(input_just_pressed(KeyCode::KeyP)),
             ),
-
-
         ),
     );
     app.add_systems(OnExit(Screen::Gameplay), (close_menu, unpause));
@@ -38,7 +42,7 @@ pub(super) fn plugin(app: &mut App) {
         unpause.run_if(in_state(Screen::Gameplay)),
     );
 
-
+    app.insert_resource(Gravity(Vec2::ZERO));
 }
 
 fn unpause(mut next_pause: ResMut<NextState<Pause>>) {

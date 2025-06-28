@@ -2,15 +2,18 @@
 
 use std::time::Instant;
 
-use bevy::prelude::*;
+use rand::Rng;
+
+use bevy::{color::palettes::css::GREEN, gizmos, prelude::*};
 
 use crate::{
     asset_tracking::LoadResource,
     audio::music,
     screens::{
-        gameplay::enemies::{gen_enemy, EntityAssets, Ship, ShipType},
+        gameplay::enemies::{gen_asteroid, gen_enemy, EntityAssets, Ship, ShipType},
         Screen,
     },
+    PausableSystems,
 };
 
 use super::{
@@ -21,6 +24,13 @@ use super::{
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<LevelAssets>();
     app.load_resource::<LevelAssets>();
+
+    app.add_systems(
+        Update,
+        (world_update
+            .in_set(PausableSystems)
+            .run_if(in_state(Screen::Gameplay))),
+    );
 }
 
 #[derive(Resource, Asset, Clone, Reflect)]
@@ -64,15 +74,33 @@ pub fn spawn_level(
                 Name::new("Gameplay Music"),
                 music(level_assets.music.clone())
             ),
-            gen_goon(
-                Ship {
-                    shiptype: ShipType::EmpireGoon,
-                    position: (32.0, 32.0),
-                    lifetime: Instant::now(),
-                    weapons: Vec::new()
-                },
-                &entity_assets
-            )
+            gen_goon(&entity_assets)
         ],
     ));
+}
+
+pub fn world_update(
+    time: Res<Time>,
+    mut commands: Commands,
+    entity_assets: Res<EntityAssets>,
+    mut gizmo: Gizmos,
+) {
+    let mut rng = rand::thread_rng();
+
+    gizmo.rect_2d(Isometry2d::IDENTITY, Vec2::new(100.0, 100.0), GREEN);
+
+    if 0 == rng.gen_range(0..10) {
+        println!("Spawned enemy");
+
+        let angle = (rng.gen_range(0..360) as f32 / 180.0 * 3.14) as f32;
+        let position = Vec2::new(angle.sin(), angle.cos()) * 500.0;
+
+        commands.spawn((
+            Name::new("Goon"),
+            Transform::default(),
+            Visibility::default(),
+            StateScoped(Screen::Gameplay),
+            children![gen_asteroid(&entity_assets, position, -position / 30.0)],
+        ));
+    }
 }

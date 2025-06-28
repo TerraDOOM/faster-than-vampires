@@ -1,5 +1,6 @@
 //! Player-specific behavior.
 
+use avian2d::prelude::*;
 use bevy::{
     image::{ImageLoaderSettings, ImageSampler},
     prelude::*,
@@ -45,11 +46,18 @@ pub fn gen_player(
             image: player_assets.ducky.clone(),
             ..default()
         },
-        Transform::from_scale(Vec2::splat(8.0).extend(1.0)),
+        Transform::from_scale(Vec2::splat(2.0).extend(1.0)),
         MovementController {
             max_speed,
             ..default()
         },
+        RigidBody::Dynamic,
+        Collider::circle(1.0),
+        Mass(1.0),
+        ExternalTorque::default().with_persistence(false),
+        ExternalImpulse::default(),
+        AngularDamping(0.8),
+        LinearDamping(0.8),
         ScreenWrap,
     )
 }

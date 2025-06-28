@@ -1,5 +1,6 @@
 use std::time::Instant;
 
+use avian2d::prelude::*;
 use bevy::prelude::*;
 
 use crate::{asset_tracking::LoadResource, PausableSystems};
@@ -11,12 +12,13 @@ pub enum ShipType {
     EmpireGoon,
     PirateShip,
     Outpoust,
+    Asteroid,
 }
 
 #[derive(Component)]
 pub struct Ship {
     pub shiptype: ShipType,
-    pub position: (f32, f32),
+    pub position: Vec2,
     pub lifetime: Instant,
     pub weapons: Vec<()>,
 }
@@ -30,30 +32,57 @@ pub(super) fn plugin(app: &mut App) {
 
 #[derive(Component)]
 pub struct Enemy;
-
-pub fn gen_enemy(ship: Ship, assets: &EntityAssets) -> impl Bundle {
+pub fn gen_enemy(ship: Ship, assets: &EntityAssets, init_velocity: Vec2) -> impl Bundle {
     // A texture atlas is a way to split a single image into a grid of related images.
     // You can learn more in this example: https://github.com/bevyengine/bevy/blob/latest/examples/2d/texture_atlas.rs
 
     (
-        Name::new("Enemy"),
         Enemy,
         Sprite {
             image: match ship.shiptype {
                 ShipType::EmpireGoon => assets.empire_goon.clone(),
+                ShipType::Asteroid => assets.asteroid.clone(),
                 _ => assets.empire_goon.clone(),
             },
-            custom_size: Some(Vec2 { x: 50.0, y: 50.0 }),
+            custom_size: Some(Vec2 { x: 32.0, y: 32.0 }),
             ..default()
         },
+        Transform::from_xyz(ship.position.x, ship.position.y, 0.0),
+        RigidBody::Dynamic,
+        Collider::circle(32.0),
+        LinearVelocity(init_velocity),
     )
 }
 
 #[derive(Component)]
-struct EntityGoon;
+pub struct EntityGoon;
+pub fn gen_goon(assets: &EntityAssets) -> impl Bundle {
+    let ship = Ship {
+        shiptype: ShipType::EmpireGoon,
+        position: Vec2::new(0.0, 0.0),
+        lifetime: Instant::now(),
+        weapons: Vec::new(),
+    };
 
-pub fn gen_goon(ship: Ship, assets: &EntityAssets) -> impl Bundle {
-    (gen_enemy(ship, assets), EntityGoon)
+    (gen_enemy(ship, assets, Vec2::new(0.0, 0.0)), EntityGoon);
+}
+
+#[derive(Component)]
+pub struct EntityAsteroid {
+    health: u32,
+}
+
+pub fn gen_asteroid(assets: &EntityAssets, position: Vec2, init_velocity: Vec2) -> impl Bundle {
+    let asteroid = Ship {
+        shiptype: ShipType::Asteroid,
+        position: position,
+        lifetime: Instant::now(),
+        weapons: Vec::new(),
+    };
+    (
+        gen_enemy(asteroid, assets, init_velocity),
+        EntityAsteroid { health: 3 },
+    )
 }
 
 pub fn process_goon_ai(goons: Query<&mut Transform, With<EntityGoon>>) {
@@ -73,6 +102,8 @@ pub struct EntityAssets {
     pirate_ship: Handle<Image>,
     #[dependency]
     outpost: Handle<Image>,
+    #[dependency]
+    asteroid: Handle<Image>,
 }
 
 impl FromWorld for EntityAssets {
@@ -83,6 +114,7 @@ impl FromWorld for EntityAssets {
             empire_goon: assets.load("images/mascot.png"),
             pirate_ship: assets.load("images/mascot.png"),
             outpost: assets.load("images/mascot.png"),
+            asteroid: assets.load("images/entities/Astroid 1 .png"),
         }
     }
 }

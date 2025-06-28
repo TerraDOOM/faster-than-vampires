@@ -13,9 +13,9 @@
 //! purposes. If you want to move the player in a smoother way,
 //! consider using a [fixed timestep](https://github.com/bevyengine/bevy/blob/main/examples/movement/physics_in_fixed_timestep.rs).
 
-use std::f32::consts::PI;
-
+use avian2d::prelude::*;
 use bevy::{prelude::*, window::PrimaryWindow};
+use std::f32::consts::PI;
 
 use crate::{AppSystems, PausableSystems};
 
@@ -24,7 +24,7 @@ pub(super) fn plugin(app: &mut App) {
     app.register_type::<ScreenWrap>();
 
     app.add_systems(
-        Update,
+        FixedUpdate,
         (apply_movement, apply_screen_wrap)
             .chain()
             .in_set(AppSystems::Update)
@@ -60,18 +60,25 @@ impl Default for MovementController {
 
 fn apply_movement(
     time: Res<Time>,
-    mut movement_query: Query<(&mut MovementController, &mut Transform)>,
+    mut movement_query: Query<(
+        &mut MovementController,
+        &Transform,
+        &mut ExternalImpulse,
+        &mut ExternalTorque,
+    )>,
 ) {
-    const ROATION_SPEED: f32 = 0.8;
-    for (mut controller, mut transform) in &mut movement_query {
-        let rotation = -controller.intent.x * ROATION_SPEED * time.delta_secs();
-        controller.angle += rotation;
-        let velocity = Vec2::from_angle(controller.angle + PI / 2.0)
-            * controller.max_speed
-            * controller.intent.y;
-        transform.translation += velocity.extend(0.0) * time.delta_secs();
-        transform.rotation = Quat::default();
-        transform.rotate_z(controller.angle);
+    const ROTATION_SPEED: f32 = 30.0 * 100.0;
+    const THRUST: f32 = 10.0;
+    for (mut controller, transform, mut linvel, mut angvel) in &mut movement_query {
+        let rotation = -controller.intent.x * ROTATION_SPEED * time.delta_secs();
+
+        angvel.apply_torque(rotation);
+        linvel.apply_impulse(
+            (transform.rotation * (controller.intent.y * THRUST * Vec2::Y).extend(0.0)).xy(),
+        );
+
+        dbg!(&angvel);
+        dbg!(&linvel);
     }
 }
 
