@@ -1,5 +1,6 @@
 //! Player-specific behavior.
 
+use avian2d::prelude::*;
 use bevy::{
     image::{ImageLoaderSettings, ImageSampler},
     prelude::*,
@@ -50,6 +51,8 @@ pub fn gen_player(
             max_speed,
             ..default()
         },
+        RigidBody::Dynamic,
+        Collider::circle(0.5)
         ScreenWrap,
     )
 }
