@@ -17,6 +17,7 @@ pub(super) fn plugin(app: &mut App) {
     app.load_resource::<PlayerAssets>();
 
     // Record directional input as movement controls.
+
     app.add_systems(
         Update,
         record_player_directional_input
@@ -64,7 +65,7 @@ pub fn gen_player(
 
 #[derive(Component, Debug, Clone, Copy, PartialEq, Eq, Default, Reflect)]
 #[reflect(Component)]
-struct Player;
+pub struct Player;
 
 fn record_player_directional_input(
     input: Res<ButtonInput<KeyCode>>,

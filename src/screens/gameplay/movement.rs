@@ -19,9 +19,13 @@ use std::f32::consts::PI;
 
 use crate::{AppSystems, PausableSystems};
 
+use super::player::Player;
+
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<MovementController>();
     app.register_type::<ScreenWrap>();
+
+    //    app.add_systems(Update, update_camera);
 
     app.add_systems(
         FixedUpdate,
@@ -77,8 +81,8 @@ fn apply_movement(
             (transform.rotation * (controller.intent.y * THRUST * Vec2::Y).extend(0.0)).xy(),
         );
 
-        dbg!(&angvel);
-        dbg!(&linvel);
+        // dbg!(&angvel);
+        // dbg!(&linvel);
     }
 }
 
@@ -98,3 +102,24 @@ fn apply_screen_wrap(
         transform.translation = wrapped.extend(transform.translation.z);
     }
 }
+
+// fn update_camera(
+//     mut camera: Single<&mut Transform, With<Camera2d>>,
+//     player: Single<&Transform, With<Player>>,
+//     time: Res<Time>,
+// ) {
+//     //let mut camera = Some(camera) else {
+//     //     return;
+//     // };
+
+//     // let player = player else {
+//     //     return;
+//     // };
+
+//     let Vec3 { x, y, .. } = player.translation;
+//     let direction = Vec3::new(x, y, camera.translation.z);
+
+//     // Applies a smooth effect to camera movement using stable interpolation
+//     // between the camera position and the player position on the x and y axes.
+//     camera.translation = direction;
+//}

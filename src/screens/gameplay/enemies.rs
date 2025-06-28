@@ -44,7 +44,7 @@ pub fn gen_enemy(ship: Ship, assets: &EntityAssets, init_velocity: Vec2) -> impl
                 ShipType::Asteroid => assets.asteroid.clone(),
                 _ => assets.empire_goon.clone(),
             },
-            custom_size: Some(Vec2 { x: 32.0, y: 32.0 }),
+            custom_size: Some(Vec2 { x: 64.0, y: 64.0 }),
             ..default()
         },
         Transform::from_xyz(ship.position.x, ship.position.y, 0.0),
@@ -108,13 +108,14 @@ pub struct EntityAssets {
 
 impl FromWorld for EntityAssets {
     fn from_world(world: &mut World) -> Self {
+        use crate::util::make_nearest;
         let assets = world.resource::<AssetServer>();
         Self {
-            flagship: assets.load("images/mascot.png"),
-            empire_goon: assets.load("images/mascot.png"),
-            pirate_ship: assets.load("images/mascot.png"),
-            outpost: assets.load("images/mascot.png"),
-            asteroid: assets.load("images/entities/Astroid 1 .png"),
+            flagship: assets.load_with_settings("images/mascot.png", make_nearest),
+            empire_goon: assets.load_with_settings("images/mascot.png", make_nearest),
+            pirate_ship: assets.load_with_settings("images/mascot.png", make_nearest),
+            outpost: assets.load_with_settings("images/mascot.png", make_nearest),
+            asteroid: assets.load_with_settings("images/entities/Astroid 1 .png", make_nearest),
         }
     }
 }

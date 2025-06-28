@@ -10,6 +10,7 @@ mod dev_tools;
 mod menus;
 mod screens;
 mod theme;
+mod util;
 
 use bevy::{asset::AssetMetaCheck, prelude::*};
 
@@ -97,5 +98,9 @@ struct Pause(pub bool);
 struct PausableSystems;
 
 fn spawn_camera(mut commands: Commands) {
-    commands.spawn((Name::new("Camera"), Camera2d));
+    commands.spawn((
+        Name::new("Camera"),
+        Camera2d,
+        Transform::from_xyz(0.0, 0.0, 0.0),
+    ));
 }

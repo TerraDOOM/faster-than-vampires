@@ -3,9 +3,11 @@ mod enemies;
 mod level;
 mod movement;
 mod player;
+mod upgrade_menu;
 
 use avian2d::prelude::Gravity;
 use bevy::{input::common_conditions::input_just_pressed, prelude::*, ui::Val::*};
+use upgrade_menu::generate_buy_menu;
 
 use crate::{menus::Menu, screens::Screen, Pause};
 use level::spawn_level;
@@ -16,6 +18,7 @@ pub(super) fn plugin(app: &mut App) {
         player::plugin,
         movement::plugin,
         enemies::plugin,
+        upgrade_menu::plugin,
     ));
 
     app.add_systems(OnEnter(Screen::Gameplay), spawn_level);
@@ -33,6 +36,11 @@ pub(super) fn plugin(app: &mut App) {
                 in_state(Screen::Gameplay)
                     .and(not(in_state(Menu::None)))
                     .and(input_just_pressed(KeyCode::KeyP)),
+            ),
+            (pause, spawn_pause_overlay, open_buy_menu).run_if(
+                in_state(Screen::Gameplay)
+                    .and(in_state(Menu::None))
+                    .and(input_just_pressed(KeyCode::KeyB)),
             ),
         ),
     );
@@ -69,6 +77,10 @@ fn spawn_pause_overlay(mut commands: Commands) {
 
 fn open_pause_menu(mut next_menu: ResMut<NextState<Menu>>) {
     next_menu.set(Menu::Pause);
+}
+
+fn open_buy_menu(mut next_menu: ResMut<NextState<Menu>>) {
+    next_menu.set(Menu::Buy);
 }
 
 fn close_menu(mut next_menu: ResMut<NextState<Menu>>) {
