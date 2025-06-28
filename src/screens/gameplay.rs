@@ -10,7 +10,12 @@ use crate::{menus::Menu, screens::Screen, Pause};
 use level::spawn_level;
 
 pub(super) fn plugin(app: &mut App) {
-    app.add_plugins((level::plugin, player::plugin, movement::plugin,enemies::plugin));
+    app.add_plugins((
+        level::plugin,
+        player::plugin,
+        movement::plugin,
+        enemies::plugin,
+    ));
 
     app.add_systems(OnEnter(Screen::Gameplay), spawn_level);
 
@@ -28,8 +33,6 @@ pub(super) fn plugin(app: &mut App) {
                     .and(not(in_state(Menu::None)))
                     .and(input_just_pressed(KeyCode::KeyP)),
             ),
-
-
         ),
     );
     app.add_systems(OnExit(Screen::Gameplay), (close_menu, unpause));
@@ -37,8 +40,6 @@ pub(super) fn plugin(app: &mut App) {
         OnEnter(Menu::None),
         unpause.run_if(in_state(Screen::Gameplay)),
     );
-
-
 }
 
 fn unpause(mut next_pause: ResMut<NextState<Pause>>) {

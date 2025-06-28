@@ -52,7 +52,12 @@ pub fn gen_player(
             ..default()
         },
         RigidBody::Dynamic,
-        Collider::circle(0.5)
+        Collider::circle(1.0),
+        Mass(1.0),
+        ExternalTorque::default().with_persistence(false),
+        ExternalImpulse::default(),
+        AngularDamping(0.8),
+        LinearDamping(0.8),
         ScreenWrap,
     )
 }

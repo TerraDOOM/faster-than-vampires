@@ -41,6 +41,7 @@ impl Plugin for AppPlugin {
                     ..default()
                 }),
         );
+        app.add_plugins(avian2d::PhysicsPlugins::default().with_length_unit(100.0));
 
         // Add other plugins.
         app.add_plugins((
