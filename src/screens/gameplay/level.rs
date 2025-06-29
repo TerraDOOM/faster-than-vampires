@@ -469,9 +469,10 @@ pub fn world_update(
         }
     }
 
+    //Mini-map
     mini_map_enemy.width = Val::Percent(1000.0 / LVL7X * 100.0);
     mini_map_pos.left = Val::Percent(player.translation.x / LVL7X * 100.0);
-    mini_map_pos.top = Val::Percent(50.0 + player.translation.y / LVL7X * 100.0);
+    mini_map_pos.top = Val::Percent(45.0 - player.translation.y / LVL7X * 100.0);
 
     //mini_map[0].Node.width = Val::Percent(10.0);
 
@@ -481,8 +482,8 @@ pub fn world_update(
         spawn_enemy(
             commands,
             entity_assets,
-            30,
-            ShipType::Rammer,
+            10,
+            ShipType::Asteroid,
             player.translation,
         );
     } else if player.translation.x < LVL3X {
