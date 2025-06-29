@@ -11,9 +11,8 @@ use bevy::{
 use crate::{asset_tracking::LoadResource, AppSystems, PausableSystems};
 
 use super::{
-    combat::{Damage, Health},
-    enemies::{Ship, ShipType},
-    movement::{MovementController, ScreenWrap},
+    combat::Health,
+    movement::MovementController,
     upgrade_menu::{UpgradeTypes, Upgrades},
 };
 
@@ -37,15 +36,9 @@ pub(super) fn plugin(app: &mut App) {
 pub struct ThrusterUpgrade;
 
 /// The player character.
-pub fn gen_player(
-    max_speed: f32,
-    player_assets: &PlayerAssets,
-    texture_atlas_layouts: &mut Assets<TextureAtlasLayout>,
-) -> impl Bundle {
+pub fn gen_player(max_speed: f32, player_assets: &PlayerAssets) -> impl Bundle {
     // A texture atlas is a way to split a single image into a grid of related images.
     // You can learn more in this example: https://github.com/bevyengine/bevy/blob/latest/examples/2d/texture_atlas.rs
-    let layout = TextureAtlasLayout::from_grid(UVec2::splat(32), 6, 2, Some(UVec2::splat(1)), None);
-    let texture_atlas_layout = texture_atlas_layouts.add(layout);
 
     (
         Name::new("Player"),

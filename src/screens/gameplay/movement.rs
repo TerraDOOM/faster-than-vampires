@@ -14,13 +14,12 @@
 //! consider using a [fixed timestep](https://github.com/bevyengine/bevy/blob/main/examples/movement/physics_in_fixed_timestep.rs).
 
 use avian2d::prelude::*;
-use bevy::{ecs::query, prelude::*, window::PrimaryWindow};
-use std::f32::consts::PI;
+use bevy::{prelude::*, window::PrimaryWindow};
 
 use crate::{screens::Screen, AppSystems, PausableSystems};
 
 use super::{
-    level::{BackgroundAccess, ObjectiveMarker, Planet},
+    level::{BackgroundAccess, Planet},
     player::Player,
 };
 
@@ -70,7 +69,7 @@ impl Default for MovementController {
 fn apply_movement(
     time: Res<Time>,
     mut movement_query: Query<(
-        &mut MovementController,
+        &MovementController,
         &Transform,
         &mut ExternalImpulse,
         &mut ExternalTorque,
@@ -78,7 +77,7 @@ fn apply_movement(
 ) {
     const ROTATION_SPEED: f32 = 30.0 * 100.0;
     const THRUST: f32 = 10.0;
-    for (mut controller, transform, mut linvel, mut angvel) in &mut movement_query {
+    for (controller, transform, mut linvel, mut angvel) in &mut movement_query {
         let rotation = -controller.intent.x * ROTATION_SPEED * time.delta_secs();
 
         angvel.apply_torque(rotation);
@@ -110,61 +109,30 @@ fn update_camera(
         Query<&mut Transform, With<Camera2d>>,
         Query<&Transform, With<Player>>,
         Query<&mut Transform, With<BackgroundAccess>>,
-        Query<(&mut Transform, &Planet, &Children)>,
+        Query<(&mut Transform, &Planet)>,
     )>,
-    time: Res<Time>,
 ) {
-    for mut planets in set.p4().iter_mut() {
-        // Do your fancy stuff here...
-    }
-
-    let Some(mut camera) = camera else {
-        return;
+    let p = {
+        let player = set.p1().single_inner().unwrap();
+        player.translation.xy()
+    };
+    let camera_layer = {
+        let mut camera = set.p0().single_inner().unwrap();
+        camera.translation.x = p.x;
+        camera.translation.y = p.y;
+        camera.translation.z
     };
 
-    let Some(player) = player else {
-        return;
-    };
-
-    let Some(mut background) = background else {
-        return;
-    };
-
-    let Some(mut quest_marker) = quest_marker else {
-        return;
-    };
-
-    let Vec3 { x, y, .. } = {
-        let Ok(player) = set.p1().single_inner() else {
-            return;
-        };
-        player.translation
-    };
-
+    let camera_pos = Vec3::new(p.x, p.y, camera_layer);
     {
-        let Ok(camera) = set.p0.single_inner() else {
-            return;
-        }
-        let direction = Vec3::new(x, y, camera.translation.z);
+        let mut p2 = set.p2();
+        let mut background = p2.single_mut().unwrap();
+        background.translation = camera_pos * 0.95 - Vec3::new(0.0, 0.0, 5.0);
     }
-
-    let direction = Vec3::new(x, y, camera.translation.z);
-
-    // Applies a smooth effect to camera movement using stable interpolation
-    // between the camera position and the player position on the x and y axes.
-    camera.translation = direction;
-
-    background.translation = camera.translation * 0.95 - Vec3::new(0.0, 0.0, 5.0);
 
     //Planet paralaxing
-    for (mut transform, init_position, children) in planets {
-        transform.translation = Vec3::new(init_position.x, init_position.y, -0.5) + direction * 0.9;
+    for (mut transform, init_position) in set.p3().iter_mut() {
+        transform.translation =
+            Vec3::new(init_position.x, init_position.y, -0.5) + camera_pos * 0.9;
     }
-
-    //Shows the next plaent to shop @
-    let target = Vec3::new(128.0, 128.0, 0.0);
-    let quest_angle = dbg![(direction * 0.9).angle_between(target)] * 3.14;
-
-    let quest_position = Vec3::new(quest_angle.cos(), quest_angle.sin(), 0.0) * 256.0;
-    quest_marker.translation = direction + quest_position;
 }

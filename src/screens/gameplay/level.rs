@@ -1,33 +1,24 @@
 //! Spawn the main level.
 
-use std::time::Instant;
-
 use rand::Rng;
 
-use bevy::{
-    color::{self, palettes::css::GREEN},
-    ecs::query::QueryData,
-    gizmos,
-    image::{ImageLoaderSettings, ImageSampler, ImageSamplerDescriptor},
-    prelude::*,
-};
+use bevy::{color::palettes::css::GREEN, prelude::*};
 
 use crate::{
     asset_tracking::LoadResource,
     audio::music,
     screens::{
         gameplay::{
-            enemies::{gen_asteroid, gen_enemy, gen_flagship, EntityAssets, Ship, ShipType},
+            enemies::{gen_asteroid, gen_flagship, EntityAssets},
             upgrade_menu::generate_buy_menu,
         },
         Screen,
     },
-    PausableSystems,
 };
 
 use super::{
-    enemies::gen_goon,
     player::{gen_player, Player, PlayerAssets},
+    GameplayLogic,
 };
 
 pub(super) fn plugin(app: &mut App) {
@@ -37,12 +28,7 @@ pub(super) fn plugin(app: &mut App) {
     app.register_type::<UIAssets>();
     app.load_resource::<UIAssets>();
 
-    app.add_systems(
-        Update,
-        (world_update
-            .in_set(PausableSystems)
-            .run_if(in_state(Screen::Gameplay))),
-    );
+    app.add_systems(Update, world_update.in_set(GameplayLogic));
 }
 
 #[derive(Resource, Asset, Clone, Reflect)]
@@ -108,7 +94,6 @@ pub fn spawn_level(
     player_assets: Res<PlayerAssets>,
     entity_assets: Res<EntityAssets>,
     ui_assets: Res<UIAssets>,
-    mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
 ) {
     commands.spawn((
         Name::new("Background"),
@@ -130,7 +115,7 @@ pub fn spawn_level(
         Visibility::default(),
         StateScoped(Screen::Gameplay),
         children![
-            gen_player(400.0, &player_assets, &mut texture_atlas_layouts),
+            gen_player(400.0, &player_assets),
             (
                 Name::new("Gameplay Music"),
                 music(level_assets.music.clone())
@@ -182,6 +167,7 @@ pub struct Planet {
     pub y: f32,
     pub has_shopped: bool,
 }
+
 pub fn gen_planet(
     assets: &LevelAssets,
     ui_assets: &UIAssets,
@@ -200,7 +186,6 @@ pub fn gen_planet(
                 PlanetType::GreenPlanet => assets.planet3.clone(),
                 PlanetType::LavaPlanet => assets.planet2.clone(),
                 PlanetType::EarthPlanet => assets.planet1.clone(),
-                _ => assets.planet1.clone(),
             },
             custom_size: Some(Vec2 { x: 512.0, y: 512.0 }),
             ..default()
@@ -257,7 +242,7 @@ pub struct UIBox;
 
 #[derive(Component, Debug, Clone, Copy, PartialEq, Eq, Default, Reflect)]
 #[reflect(Component)]
-pub struct UIPostition;
+pub struct UIPosition;
 
 pub fn gen_ui(ui_assets: &Res<UIAssets>) -> impl Bundle {
     (
@@ -285,7 +270,7 @@ pub fn gen_ui(ui_assets: &Res<UIAssets>) -> impl Bundle {
                 ..default()
             },
             children![(
-                UIPostition,
+                UIPosition,
                 Text::new("Loading X"),
                 TextFont {
                     font: ui_assets.font.clone(),
@@ -299,12 +284,11 @@ pub fn gen_ui(ui_assets: &Res<UIAssets>) -> impl Bundle {
 }
 
 pub fn world_update(
-    time: Res<Time>,
     mut commands: Commands,
     entity_assets: Res<EntityAssets>,
     mut gizmo: Gizmos,
     player: Single<&Transform, With<Player>>,
-    mut ui_position: Single<&mut Text, With<UIPostition>>,
+    mut ui_position: Single<&mut Text, With<UIPosition>>,
 ) {
     let mut rng = rand::thread_rng();
 

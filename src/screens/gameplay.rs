@@ -64,7 +64,8 @@ pub(super) fn plugin(app: &mut App) {
             resource_exists::<level::LevelAssets>
                 .and(resource_exists::<player::PlayerAssets>)
                 .and(resource_exists::<enemies::EntityAssets>)
-                .and(any_with_component::<player::Player>),
+                .and(any_with_component::<player::Player>)
+                .and(any_with_component::<Camera2d>),
         ),
     );
 
