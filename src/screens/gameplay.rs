@@ -1,4 +1,5 @@
 //! The screen state for the main gameplay.
+mod combat;
 mod enemies;
 mod level;
 mod movement;

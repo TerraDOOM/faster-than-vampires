@@ -8,7 +8,11 @@ use bevy::{
 
 use crate::{asset_tracking::LoadResource, AppSystems, PausableSystems};
 
-use super::movement::{MovementController, ScreenWrap};
+use super::{
+    combat::Damage,
+    enemies::ShipType,
+    movement::{MovementController, ScreenWrap},
+};
 
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<Player>();
@@ -59,7 +63,37 @@ pub fn gen_player(
         ExternalImpulse::default(),
         AngularDamping(0.8),
         LinearDamping(0.8),
+        ScreenWrap,
+        CollisionEventsEnabled,
     )
+}
+
+fn process_asteroid_collisions(
+    mut commands: Commands,
+    collisions: Collisions,
+    player: Single<Entity, With<Player>>,
+    asteroids: Query<&Ship>,
+) {
+    for contact_pair in collisions.collisions_with(*player) {
+        let total_impulse;
+        if contact_pair.collider1 == *player
+            && asteroids
+                .get(contact_pair.collider2)
+                .is_ok_and(|ship| ship.shiptype == ShipType::Asteroid)
+        {
+            total_impulse = contact_pair.total_normal_impulse_magnitude();
+        } else if contact_pair.collider2 == *player
+            && asteroids
+                .get(contact_pair.collider1)
+                .is_ok_and(|ship| ship.shiptype == ShipType::Asteroid)
+        {
+            total_impulse = contact_pair.total_normal_impulse_magnitude();
+        } else {
+            continue;
+        }
+
+        commands.trigger_targets(Damage(total_impulse as u32), *player);
+    }
 }
 
 #[derive(Component, Debug, Clone, Copy, PartialEq, Eq, Default, Reflect)]
