@@ -18,6 +18,7 @@ use crate::{
 };
 
 use super::{
+    combat::Health,
     enemies::ShipType,
     player::{gen_player, Player, PlayerAssets},
     GameplayLogic,
@@ -37,6 +38,9 @@ const LVL1X: f32 = 0.0;
 const LVL2X: f32 = 10000.0;
 const LVL3X: f32 = 20000.0;
 const LVL4X: f32 = 30000.0;
+const LVL5X: f32 = 40000.0;
+const LVL6X: f32 = 50000.0;
+const LVL7X: f32 = 60000.0;
 
 #[derive(Resource, Asset, Clone, Reflect)]
 #[reflect(Resource)]
@@ -277,6 +281,25 @@ pub struct UIBox;
 #[reflect(Component)]
 pub struct UIPosition;
 
+#[derive(Component, Debug, Clone, Copy, PartialEq, Eq, Default, Reflect)]
+#[reflect(Component)]
+pub struct HPBar;
+#[derive(Component, Debug, Clone, Copy, PartialEq, Eq, Default, Reflect)]
+#[reflect(Component)]
+pub struct HPBarAnti;
+
+#[derive(Component, Debug, Clone, Copy, PartialEq, Eq, Default, Reflect)]
+#[reflect(Component)]
+pub struct MiniMap;
+
+#[derive(Component, Debug, Clone, Copy, PartialEq, Eq, Default, Reflect)]
+#[reflect(Component)]
+pub struct MiniMapRed;
+
+#[derive(Component, Debug, Clone, Copy, PartialEq, Eq, Default, Reflect)]
+#[reflect(Component)]
+pub struct MiniMapPos;
+
 pub fn gen_ui(ui_assets: &Res<UIAssets>) -> impl Bundle {
     (
         Name::new("UIBox"),
@@ -286,33 +309,96 @@ pub fn gen_ui(ui_assets: &Res<UIAssets>) -> impl Bundle {
             width: Val::Percent(100.0),
             height: Val::Percent(15.0),
             right: Val::Vw(0.0),
-            align_items: AlignItems::FlexEnd,
-            justify_content: JustifyContent::FlexEnd,
-            flex_direction: FlexDirection::Column,
+            align_items: AlignItems::Center,
+            justify_content: JustifyContent::FlexStart,
+            flex_direction: FlexDirection::Row,
             ..default()
         },
         ZIndex(2),
-        children![(
-            //Spawns big button??
-            Node {
-                width: Val::Px(256.0),
-                // horizontally center child text
-                justify_content: JustifyContent::Center,
-                // vertically center child text
-                align_items: AlignItems::Center,
-                ..default()
-            },
-            children![(
-                UIPosition,
-                Text::new("Loading X"),
-                TextFont {
-                    font: ui_assets.font.clone(),
-                    font_size: 33.0,
+        children![
+            (
+                //HP-bar
+                HPBar,
+                Node {
+                    width: Val::Percent(40.0),
+                    height: Val::Percent(50.0),
+                    left: Val::Percent(3.0),
+                    // horizontally center child text
+                    justify_content: JustifyContent::Center,
+                    // vertically center child text
+                    align_items: AlignItems::Center,
                     ..default()
                 },
-                TextColor(Color::srgb(0.7, 0.7, 0.9)),
-            )]
-        ),],
+                BackgroundColor(Color::srgb(0.2, 1.0, 0.2))
+            ),
+            (
+                //HP-bar-dead
+                HPBarAnti,
+                Node {
+                    width: Val::Percent(0.0),
+                    height: Val::Percent(50.0),
+                    left: Val::Percent(3.0),
+                    // horizontally center child text
+                    justify_content: JustifyContent::Center,
+                    // vertically center child text
+                    align_items: AlignItems::Center,
+                    ..default()
+                },
+                BackgroundColor(Color::srgb(0.15, 0.7, 0.15))
+            ),
+            (
+                //Mini-map
+                MiniMap,
+                Node {
+                    width: Val::Percent(40.0),
+                    height: Val::Percent(60.0),
+                    left: Val::Percent(6.0),
+                    ..default()
+                },
+                BackgroundColor(Color::srgb(0.3, 0.2, 0.3)),
+                children![
+                    (
+                        MiniMapRed,
+                        Node {
+                            width: Val::Percent(40.0),
+                            height: Val::Percent(100.0),
+                            ..default()
+                        },
+                        BackgroundColor(Color::srgba(1.0, 0.0, 0.0, 0.5)),
+                    ),
+                    (
+                        MiniMapPos,
+                        Node {
+                            width: Val::Px(16.0),
+                            height: Val::Px(16.0),
+                            ..default()
+                        },
+                        BackgroundColor(Color::srgba(0.1, 1.0, 0.1, 0.8)),
+                    )
+                ]
+            ),
+            (
+                //Spawns big button??
+                Node {
+                    width: Val::Px(256.0),
+                    // horizontally center child text
+                    justify_content: JustifyContent::Center,
+                    // vertically center child text
+                    align_items: AlignItems::Center,
+                    ..default()
+                },
+                children![(
+                    UIPosition,
+                    Text::new("Loading X"),
+                    TextFont {
+                        font: ui_assets.font.clone(),
+                        font_size: 33.0,
+                        ..default()
+                    },
+                    TextColor(Color::srgb(0.7, 0.7, 0.9)),
+                )]
+            ),
+        ],
     )
 }
 
@@ -320,15 +406,60 @@ pub fn world_update(
     mut commands: Commands,
     entity_assets: Res<EntityAssets>,
     mut gizmo: Gizmos,
-    player: Single<&Transform, With<Player>>,
+    player: Single<(&Transform, &Health), With<Player>>,
     mut ui_position: Single<&mut Text, With<UIPosition>>,
+    mut hp_bar: Single<
+        &mut Node,
+        (
+            With<HPBar>,
+            Without<HPBarAnti>,
+            Without<MiniMapRed>,
+            Without<MiniMapPos>,
+        ),
+    >,
+    mut anti_hp_bar: Single<
+        &mut Node,
+        (
+            With<HPBarAnti>,
+            Without<HPBar>,
+            Without<MiniMapRed>,
+            Without<MiniMapPos>,
+        ),
+    >,
+    mut mini_map_enemy: Single<
+        &mut Node,
+        (
+            With<MiniMapRed>,
+            Without<HPBarAnti>,
+            Without<HPBar>,
+            Without<MiniMapPos>,
+        ),
+    >,
+    mut mini_map_pos: Single<
+        &mut Node,
+        (
+            With<MiniMapPos>,
+            Without<HPBarAnti>,
+            Without<HPBar>,
+            Without<MiniMapRed>,
+        ),
+    >,
     planets: Query<(&Transform, &mut Planet)>, //For shop checking
     mut next_menu: ResMut<NextState<Menu>>,
 ) {
     gizmo.rect_2d(Isometry2d::IDENTITY, Vec2::new(100.0, 100.0), GREEN);
 
+    let (player, health) = player.into_inner();
+
+    //Position
     ui_position.0 = ((player.translation.x) as i32).to_string();
 
+    //HP bar
+    let hp_width = health.0 as f32 / 100.0 * 40.0;
+    hp_bar.width = Val::Percent(hp_width);
+    anti_hp_bar.width = Val::Percent(40.0 - hp_width);
+
+    //Planet collision
     for (planet_transform, mut planet) in planets {
         if !planet.has_shopped
             && (player.translation - planet_transform.translation).length() < 200.0
@@ -337,6 +468,12 @@ pub fn world_update(
             next_menu.set(Menu::Buy);
         }
     }
+
+    mini_map_enemy.width = Val::Percent(1000.0 / LVL7X * 100.0);
+    mini_map_pos.left = Val::Percent(player.translation.x / LVL7X * 100.0);
+    mini_map_pos.top = Val::Percent(50.0 + player.translation.y / LVL7X * 100.0);
+
+    //mini_map[0].Node.width = Val::Percent(10.0);
 
     //Enemy spawning depending on biome
 
