@@ -8,7 +8,10 @@ mod upgrade_menu;
 
 mod animation;
 
-use avian2d::prelude::Gravity;
+use avian2d::{
+    prelude::{Gravity, Physics},
+    schedule::PhysicsTime,
+};
 use bevy::{input::common_conditions::input_just_pressed, prelude::*, ui::Val::*};
 
 use crate::{menus::Menu, screens::Screen, PausableSystems, Pause};

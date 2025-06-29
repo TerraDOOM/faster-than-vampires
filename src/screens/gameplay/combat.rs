@@ -1,6 +1,8 @@
 use avian2d::prelude::*;
 use bevy::prelude::*;
 
+pub mod weapons;
+
 use crate::{screens::Screen, PausableSystems};
 
 use super::{
@@ -10,6 +12,8 @@ use super::{
 };
 
 pub(super) fn plugin(app: &mut App) {
+    app.add_plugins(weapons::plugin);
+
     app.add_systems(
         Update,
         (process_asteroid_collisions, process_player_dead).in_set(GameplayLogic),
@@ -29,9 +33,6 @@ pub struct Dead;
 
 #[derive(Component)]
 pub struct HasWeapon;
-
-#[derive(Component)]
-pub struct NormalGun {}
 
 fn damage_trigger(trigger: Trigger<Damage>, mut killable: Query<&mut Health>) {
     let Ok(mut target) = killable.get_mut(trigger.target()) else {
@@ -59,7 +60,7 @@ fn process_asteroid_collisions(
         }
 
         let mut damage = total_impulse * 2.0;
-        if damage < 3.0 {
+        if damage < 10.0 {
             damage = 0.0;
         }
         if damage > 0.0 {

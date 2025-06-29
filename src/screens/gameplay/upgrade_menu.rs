@@ -5,19 +5,32 @@ use crate::menus::Menu;
 
 use super::{
     level::{PlanetType, UIAssets},
+    player::Player,
     GameplayLogic,
 };
 
 pub(super) fn plugin(app: &mut App) {
     app.add_systems(OnEnter(Menu::Buy), generate_buy_menu.in_set(GameplayLogic));
-    app.add_systems(OnExit(Menu::Buy), kill_buy_menu);
 
     app.add_systems(
         Update,
         go_back.run_if(in_state(Menu::Buy).and(input_just_pressed(KeyCode::Escape))),
     );
+    app.add_systems(Update, update_upgrades.in_set(GameplayLogic));
 
     app.add_systems(Update, button_system.run_if(in_state(Menu::Buy)));
+    app.add_systems(
+        Update,
+        (|upgrades: Single<&mut Upgrades, With<Player>>| {
+            *upgrades
+                .into_inner()
+                .gotten_upgrades
+                .get_mut(&UpgradeTypes::Cannon)
+                .unwrap() += 1;
+        })
+        .run_if(input_just_pressed(KeyCode::Space))
+        .in_set(GameplayLogic),
+    );
 }
 
 #[repr(usize)]
@@ -38,10 +51,26 @@ pub struct Upgrades {
     pub gotten_upgrades: HashMap<UpgradeTypes, usize>,
 }
 
-pub fn kill_buy_menu(mut uishop_item: Query<&mut Node, With<UIShop>>) {
-    for mut item in &mut uishop_item {
-        item.display = Display::None;
-    }
+pub fn update_upgrades(
+    mut commands: Commands,
+    upgrades: Single<(Entity, &Upgrades), (With<Player>, Changed<Upgrades>)>,
+) {
+    let (ent, upgrades) = upgrades.into_inner();
+    let mut player = commands.get_entity(ent).unwrap();
+    player.despawn_related::<Children>();
+
+    let cannons = super::combat::weapons::spawn_cannons(
+        upgrades
+            .gotten_upgrades
+            .get(&UpgradeTypes::Cannon)
+            .cloned()
+            .unwrap_or(0),
+    );
+    player.with_children(|commands| {
+        for cannon in cannons {
+            commands.spawn(cannon);
+        }
+    });
 }
 
 pub fn draft_upgrades(
@@ -65,6 +94,7 @@ pub fn generate_buy_menu(
     commands.spawn((
         Name::new("UIBox"),
         UIShop,
+        StateScoped(Menu::Buy),
         BackgroundColor(Color::srgb(0.7, 0.7, 0.7)),
         Node {
             width: Val::Percent(80.0),
