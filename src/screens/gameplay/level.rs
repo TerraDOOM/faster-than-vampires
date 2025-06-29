@@ -292,11 +292,12 @@ pub fn world_update(
 
     gizmo.rect_2d(Isometry2d::IDENTITY, Vec2::new(100.0, 100.0), GREEN);
 
-    ui_position.0 = ((15000.0 - player.translation.x) as i32).to_string();
+    ui_position.0 = ((player.translation.x) as i32).to_string();
 
     if 0 == rng.gen_range(0..30) {
         let rand_angle = (rng.gen_range(0..360) as f32 / 180.0 * 3.14) as f32;
-        let position = Vec2::new(rand_angle.sin(), rand_angle.cos()) * 900.0;
+        let relative_postion = Vec2::new(rand_angle.sin(), rand_angle.cos()) * 900.0;
+        let position = Vec2::new(player.translation.x, player.translation.y) + relative_postion;
 
         let rand_deviation =
             Vec2::new(rng.gen_range(-10..10) as f32, rng.gen_range(-10..10) as f32) / 20.0;
@@ -310,7 +311,7 @@ pub fn world_update(
             children![gen_asteroid(
                 &entity_assets,
                 position,
-                -(position + rand_deviation) * rand_speed
+                -(relative_postion + rand_deviation) * rand_speed
             )],
         ));
     }
