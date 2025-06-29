@@ -19,7 +19,7 @@ use crate::{
 
 use super::{
     combat::{Damage, Health},
-    enemies::{RammerAI, ShipType},
+    enemies::{FlagshipAI, RammerAI, ShipType},
     player::{gen_player, Player, PlayerAssets},
     GameplayLogic,
 };
@@ -449,6 +449,7 @@ pub fn world_update(
     entity_assets: Res<EntityAssets>,
     mut gizmo: Gizmos,
     player: Single<(&Transform, &Health), With<Player>>,
+    flagship: Single<&Transform, With<FlagshipAI>>,
     mut ui_position: Single<&mut Text, With<UIPosition>>,
     mut hp_bar: Single<
         &mut Node,
@@ -522,7 +523,7 @@ pub fn world_update(
     }
 
     //Mini-map
-    mini_map_enemy.width = Val::Percent(1000.0 / LVL7X * 100.0);
+    mini_map_enemy.width = Val::Percent(flagship.translation.x / LVL7X * 100.0);
     mini_map_pos.left = Val::Percent(player.translation.x / LVL7X * 100.0);
     mini_map_pos.top = Val::Percent(45.0 - player.translation.y / 10000.0 * 100.0);
 

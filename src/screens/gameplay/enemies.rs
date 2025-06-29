@@ -32,6 +32,7 @@ pub(super) fn plugin(app: &mut App) {
 
     app.add_systems(Update, process_goon_ai.in_set(PausableSystems));
     app.add_systems(Update, process_rammer_ai.in_set(PausableSystems));
+    app.add_systems(Update, process_flagship_ai.in_set(PausableSystems));
 }
 
 #[derive(Component)]
@@ -42,20 +43,33 @@ pub fn gen_enemy(ship: Ship, assets: &EntityAssets, init_velocity: Vec2) -> impl
 
     (
         Enemy,
-        Sprite {
-            image: match ship.shiptype {
-                ShipType::EmpireGoon => assets.empire_goon.clone(),
-                ShipType::PirateShip => assets.empire_goon.clone(),
-                ShipType::Asteroid => assets.asteroid.clone(),
-                ShipType::Rammer => assets.ramming_ship.clone(),
-                _ => assets.empire_goon.clone(),
-            },
-            custom_size: Some(Vec2 { x: 64.0, y: 64.0 }),
-            ..default()
+        if ship.shiptype == ShipType::Flagship {
+            (
+                Sprite {
+                    image: assets.flagship.clone(),
+                    custom_size: Some(Vec2 { x: 512.0, y: 512.0 }),
+                    ..default()
+                },
+                Collider::circle(128.0),
+            )
+        } else {
+            (
+                Sprite {
+                    image: match ship.shiptype {
+                        ShipType::EmpireGoon => assets.empire_goon.clone(),
+                        ShipType::PirateShip => assets.empire_goon.clone(),
+                        ShipType::Asteroid => assets.asteroid.clone(),
+                        ShipType::Rammer => assets.ramming_ship.clone(),
+                        _ => assets.empire_goon.clone(),
+                    },
+                    custom_size: Some(Vec2 { x: 64.0, y: 64.0 }),
+                    ..default()
+                },
+                Collider::circle(32.0),
+            )
         },
         Transform::from_xyz(ship.position.x, ship.position.y, 0.0),
         RigidBody::Dynamic,
-        Collider::circle(32.0),
         LinearVelocity(init_velocity),
     )
 }
@@ -74,25 +88,69 @@ pub fn gen_goon(assets: &EntityAssets, position: Vec2) -> impl Bundle {
     (gen_enemy(ship, assets, Vec2::new(0.0, 0.0)), GoonAI)
 }
 
-#[derive(Component, Debug)]
+#[derive(Component, Debug, Copy, Clone, PartialEq, Eq)]
 pub struct FlagshipAI;
 pub fn gen_flagship(assets: &EntityAssets) -> impl Bundle {
-    let ship = Ship {
+    let flagship = Ship {
         shiptype: ShipType::Flagship,
-        position: Vec2::new(-700.0, 0.0),
+        position: Vec2::new(-512.0, 0.0),
         lifetime: Instant::now(),
         weapons: Vec::new(),
     };
-
     (
+        gen_enemy(flagship, assets, Vec2::ZERO),
         FlagshipAI,
-        Sprite {
-            image: assets.flagship.clone(),
-            custom_size: Some(Vec2 { x: 512.0, y: 512.0 }),
-            ..default()
-        },
-        Transform::from_xyz(ship.position.x, ship.position.y, 0.0),
+        ExternalImpulse::new(Vec2::ZERO),
+        Mass(10.0),
+        ExternalTorque::default().with_persistence(false),
+        LinearDamping(0.8),
+        AngularDamping(0.1),
+        CollisionEventsEnabled,
     )
+}
+pub fn process_flagship_ai(
+    flagships: Query<
+        (
+            &Transform,
+            &mut ExternalImpulse,
+            &mut LinearDamping,
+            &AngularVelocity,
+            &mut ExternalTorque,
+            &mut AngularDamping,
+        ),
+        With<FlagshipAI>,
+    >,
+    player: Single<&Transform, With<Player>>,
+) {
+    for (flagship_pos, mut force, mut linear_damping, angvel, mut torque, mut angular_damping) in
+        flagships
+    {
+        let enemy_forward = (flagship_pos.rotation * Vec3::Y).xy();
+        linear_damping.0 = 0.2;
+        linear_damping.0 = 20.0;
+        angular_damping.0 = 0.1;
+
+        let to_player = (player.translation.xy() - flagship_pos.translation.xy()).normalize();
+
+        // Get the dot product between the enemy forward vector and the direction to the player.
+        let forward_dot_player = enemy_forward.dot(to_player);
+        //If 1, we are already facing them
+        if (forward_dot_player - 1.0).abs() < 0.1 {
+            if angvel.0 > 0.1 {
+                angular_damping.0 = 10.0;
+            } else {
+                force.apply_impulse(enemy_forward * 300.0);
+            }
+            continue;
+        }
+        let enemy_right = (flagship_pos.rotation * Vec3::X).xy();
+
+        let right_dot_player = enemy_right.dot(to_player);
+
+        let rotation_sign = -f32::copysign(1.0, right_dot_player);
+
+        torque.apply_torque(rotation_sign * 700.0);
+    }
 }
 
 #[derive(Component, Debug)]
