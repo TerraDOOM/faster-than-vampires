@@ -11,6 +11,7 @@ use bevy::{
 use crate::{asset_tracking::LoadResource, AppSystems, PausableSystems};
 
 use super::{
+    animation::{AnimatedSprite, AnimationType},
     combat::Health,
     movement::MovementController,
     upgrade_menu::{UpgradeTypes, Upgrades},
@@ -124,6 +125,24 @@ pub struct PlayerAssets {
     pub crash_sfx: Handle<AudioSource>,
     #[dependency]
     pub exploded: Handle<Image>,
+    pub exploded_layout: Handle<TextureAtlasLayout>,
+}
+
+impl PlayerAssets {
+    pub fn get_explosion(&self) -> impl Bundle {
+        (
+            Sprite {
+                image: self.exploded.clone(),
+                texture_atlas: Some(TextureAtlas {
+                    layout: self.exploded_layout.clone(),
+                    index: 0,
+                }),
+                custom_size: Some(Vec2::new(256.0, 256.0)),
+                ..default()
+            },
+            AnimatedSprite::new(30, 64, AnimationType::Once),
+        )
+    }
 }
 
 impl FromWorld for PlayerAssets {
@@ -138,7 +157,14 @@ impl FromWorld for PlayerAssets {
                 },
             ),
             crash_sfx: assets.load("audio/sound_effects/metal_crash.ogg"),
-            exploded: assets.load("images/explosion.png"),
+            exploded: assets.load("VFX/Flipbooks/TFlip_EpicExplosion.png"),
+            exploded_layout: assets.add(TextureAtlasLayout::from_grid(
+                UVec2::splat(256),
+                8,
+                8,
+                None,
+                None,
+            )),
             steps: vec![
                 assets.load("audio/sound_effects/step1.ogg"),
                 assets.load("audio/sound_effects/step2.ogg"),
