@@ -71,12 +71,14 @@ pub(super) fn plugin(app: &mut App) {
     app.insert_resource(Gravity(Vec2::ZERO));
 }
 
-fn unpause(mut next_pause: ResMut<NextState<Pause>>) {
+fn unpause(mut next_pause: ResMut<NextState<Pause>>, mut time: ResMut<Time<Physics>>) {
     next_pause.set(Pause(false));
+    time.unpause();
 }
 
-fn pause(mut next_pause: ResMut<NextState<Pause>>) {
+fn pause(mut next_pause: ResMut<NextState<Pause>>, mut time: ResMut<Time<Physics>>) {
     next_pause.set(Pause(true));
+    time.pause();
 }
 
 fn spawn_pause_overlay(mut commands: Commands) {
