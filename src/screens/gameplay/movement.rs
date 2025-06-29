@@ -15,7 +15,6 @@
 
 use avian2d::prelude::*;
 use bevy::{prelude::*, window::PrimaryWindow};
-use std::f32::consts::PI;
 
 use crate::{screens::Screen, AppSystems, PausableSystems};
 
@@ -70,7 +69,7 @@ impl Default for MovementController {
 fn apply_movement(
     time: Res<Time>,
     mut movement_query: Query<(
-        &mut MovementController,
+        &MovementController,
         &Transform,
         &mut ExternalImpulse,
         &mut ExternalTorque,
@@ -78,7 +77,7 @@ fn apply_movement(
 ) {
     const ROTATION_SPEED: f32 = 30.0 * 100.0;
     const THRUST: f32 = 10.0;
-    for (mut controller, transform, mut linvel, mut angvel) in &mut movement_query {
+    for (controller, transform, mut linvel, mut angvel) in &mut movement_query {
         let rotation = -controller.intent.x * ROTATION_SPEED * time.delta_secs();
 
         angvel.apply_torque(rotation);
@@ -106,73 +105,34 @@ fn apply_screen_wrap(
 }
 
 fn update_camera(
-    mut camera: Option<
-        Single<
-            &mut Transform,
-            (
-                With<Camera2d>,
-                Without<BackgroundAccess>,
-                Without<Player>,
-                Without<Planet>,
-            ),
-        >,
-    >,
-    player: Option<
-        Single<
-            &Transform,
-            (
-                With<Player>,
-                Without<BackgroundAccess>,
-                Without<Camera2d>,
-                Without<Planet>,
-            ),
-        >,
-    >,
-    background: Option<
-        Single<
-            &mut Transform,
-            (
-                With<BackgroundAccess>,
-                Without<Camera2d>,
-                Without<Player>,
-                Without<Planet>,
-            ),
-        >,
-    >,
-    planets: Query<
-        (&mut Transform, &Planet),
-        (
-            Without<Camera2d>,
-            Without<Player>,
-            Without<BackgroundAccess>,
-        ),
-    >,
-    time: Res<Time>,
+    mut set: ParamSet<(
+        Query<&mut Transform, With<Camera2d>>,
+        Query<&Transform, With<Player>>,
+        Query<&mut Transform, With<BackgroundAccess>>,
+        Query<(&mut Transform, &Planet)>,
+    )>,
 ) {
-    let Some(mut camera) = camera else {
-        return;
+    let p = {
+        let player = set.p1().single_inner().unwrap();
+        player.translation.xy()
+    };
+    let camera_layer = {
+        let mut camera = set.p0().single_inner().unwrap();
+        camera.translation.x = p.x;
+        camera.translation.y = p.y;
+        camera.translation.z
     };
 
-    let Some(player) = player else {
-        return;
-    };
-
-    let Some(mut background) = background else {
-        return;
-    };
-
-    let Vec3 { x, y, .. } = player.translation;
-    let direction = Vec3::new(x, y, camera.translation.z);
-
-    // Applies a smooth effect to camera movement using stable interpolation
-    // between the camera position and the player position on the x and y axes.
-    camera.translation = direction;
-
-    background.translation = camera.translation * 0.95 - Vec3::new(0.0, 0.0, 5.0);
+    let camera_pos = Vec3::new(p.x, p.y, camera_layer);
+    {
+        let mut p2 = set.p2();
+        let mut background = p2.single_mut().unwrap();
+        background.translation = camera_pos * 0.95 - Vec3::new(0.0, 0.0, 5.0);
+    }
 
     //Planet paralaxing
-    for (mut transform, init_position) in planets {
+    for (mut transform, init_position) in set.p3().iter_mut() {
         transform.translation =
-            Vec3::new(init_position.x, init_position.y, -0.5) + direction * 0.25;
+            Vec3::new(init_position.x, init_position.y, -0.5) + camera_pos * 0.9;
     }
 }

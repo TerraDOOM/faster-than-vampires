@@ -4,7 +4,7 @@ use bevy::prelude::*;
 use crate::{screens::Screen, PausableSystems};
 
 use super::{
-    enemies::{EntityAsteroid, Ship, ShipType},
+    enemies::AsteroidAI,
     player::{Player, PlayerAssets},
 };
 
@@ -30,7 +30,7 @@ fn process_asteroid_collisions(
     mut commands: Commands,
     collisions: Collisions,
     player: Single<Entity, With<Player>>,
-    asteroids: Query<&EntityAsteroid>,
+    asteroids: Query<&AsteroidAI>,
 ) {
     for contact_pair in collisions.collisions_with(*player) {
         let total_impulse;

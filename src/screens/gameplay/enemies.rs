@@ -55,7 +55,7 @@ pub fn gen_enemy(ship: Ship, assets: &EntityAssets, init_velocity: Vec2) -> impl
 }
 
 #[derive(Component, Debug)]
-pub struct EntityGoon;
+pub struct GoonAI;
 pub fn gen_goon(assets: &EntityAssets) -> impl Bundle {
     let ship = Ship {
         shiptype: ShipType::EmpireGoon,
@@ -64,11 +64,11 @@ pub fn gen_goon(assets: &EntityAssets) -> impl Bundle {
         weapons: Vec::new(),
     };
 
-    (gen_enemy(ship, assets, Vec2::new(0.0, 0.0)), EntityGoon);
+    (gen_enemy(ship, assets, Vec2::new(0.0, 0.0)), GoonAI);
 }
 
 #[derive(Component, Debug)]
-pub struct EntityFlagship;
+pub struct FlagshipAI;
 pub fn gen_flagship(assets: &EntityAssets) -> impl Bundle {
     let ship = Ship {
         shiptype: ShipType::Flagship,
@@ -79,7 +79,7 @@ pub fn gen_flagship(assets: &EntityAssets) -> impl Bundle {
 
     (
         Enemy,
-        EntityFlagship,
+        FlagshipAI,
         Sprite {
             image: assets.flagship.clone(),
             custom_size: Some(Vec2 { x: 512.0, y: 512.0 }),
@@ -90,9 +90,7 @@ pub fn gen_flagship(assets: &EntityAssets) -> impl Bundle {
 }
 
 #[derive(Component, Debug)]
-pub struct EntityAsteroid {
-    health: u32,
-}
+pub struct AsteroidAI;
 
 pub fn gen_asteroid(assets: &EntityAssets, position: Vec2, init_velocity: Vec2) -> impl Bundle {
     let asteroid = Ship {
@@ -101,13 +99,10 @@ pub fn gen_asteroid(assets: &EntityAssets, position: Vec2, init_velocity: Vec2) 
         lifetime: Instant::now(),
         weapons: Vec::new(),
     };
-    (
-        gen_enemy(asteroid, assets, init_velocity),
-        EntityAsteroid { health: 3 },
-    )
+    (gen_enemy(asteroid, assets, init_velocity), AsteroidAI)
 }
 
-pub fn process_goon_ai(goons: Query<&mut Transform, With<EntityGoon>>) {
+pub fn process_goon_ai(goons: Query<&mut Transform, With<GoonAI>>) {
     for mut goon_pos in goons {
         goon_pos.translation.x += 1.0;
     }
