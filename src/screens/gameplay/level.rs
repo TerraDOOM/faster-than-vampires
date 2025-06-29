@@ -141,10 +141,6 @@ pub fn spawn_level(
         StateScoped(Screen::Gameplay),
         children![
             gen_player(400.0, &player_assets, &mut texture_atlas_layouts),
-            (
-                Name::new("Gameplay Music"),
-                music(level_assets.music.clone())
-            ),
             gen_goon(&entity_assets),
             map_gen(&level_assets),
         ],
