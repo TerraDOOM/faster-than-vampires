@@ -3,7 +3,7 @@
 use avian2d::prelude::{Collider, RigidBody, Sensor};
 use rand::Rng;
 
-use bevy::{color::palettes::css::GREEN, prelude::*};
+use bevy::{color::palettes::css::GREEN, ecs::entity, prelude::*};
 
 use crate::{
     asset_tracking::LoadResource,
@@ -444,7 +444,15 @@ pub fn world_update(
             Without<MiniMapRed>,
         ),
     >,
-    planets: Query<(&Transform, &mut Planet)>, //For shop checking
+    planets: Query<
+        (&Transform, &mut Planet, Entity),
+        (
+            Without<HPBarAnti>,
+            Without<HPBar>,
+            Without<MiniMapRed>,
+            Without<MiniMapPos>,
+        ),
+    >, //For shop checking
     mut next_menu: ResMut<NextState<Menu>>,
 ) {
     gizmo.rect_2d(Isometry2d::IDENTITY, Vec2::new(100.0, 100.0), GREEN);
@@ -460,11 +468,13 @@ pub fn world_update(
     anti_hp_bar.width = Val::Percent(40.0 - hp_width);
 
     //Planet collision
-    for (planet_transform, mut planet) in planets {
+    for (planet_transform, mut planet, entity) in planets {
         if !planet.has_shopped
             && (player.translation - planet_transform.translation).length() < 200.0
         {
             planet.has_shopped = true;
+
+            commands.entity(entity).despawn_related::<Children>();
             next_menu.set(Menu::Buy);
         }
     }

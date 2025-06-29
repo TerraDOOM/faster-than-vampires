@@ -156,20 +156,57 @@ pub fn gen_shop_item(
             width: Val::Percent(30.0),
             height: Val::Percent(70.0),
             left: Val::Percent(2.5 * (nr as f32)),
+            align_items: AlignItems::Center,
+            flex_direction: FlexDirection::Column,
             ..default()
         },
         BackgroundColor(Color::srgb(0.5, 0.5, 0.5)),
-        Text::new(match upgrade_type {
-            UpgradeTypes::Cannon => "Upgrade your cannon",
-            UpgradeTypes::Thrusters => "Upgrade your Thrusters",
-            _ => "unkown upgrade",
-        }),
-        TextFont {
-            font: ui_assets.font.clone(),
-            font_size: 32.0,
-            ..default()
-        },
-        TextColor(Color::srgb(1.0, 1.0, 1.0)),
+
+        children![(
+            //Title
+            Node {
+                width: Val::Percent(90.0),
+                height: Val::Percent(25.0),
+                top: Val::Percent(5.0),
+                left: Val::Percent(5.0),
+                ..default()
+            },
+            Text::new(match upgrade_type {
+                UpgradeTypes::Cannon => format!("Lvl.{} Cannon", upgrade_level+1),
+                UpgradeTypes::Thrusters => format!("Lvl.{} Thruster", upgrade_level+1),
+                UpgradeTypes::Electricity  => format!("Lvl.{} HV-field", upgrade_level),
+                UpgradeTypes::Laser  => format!("Lvl.{} Photon canon", upgrade_level),
+                _ => "unkown upgrade".to_string(),
+            }),
+            TextFont {
+                font: ui_assets.font.clone(),
+                font_size: 32.0,
+                ..default()
+            },
+            TextColor(Color::srgb(1.0, 1.0, 1.0)),
+        ),
+                  (
+                      //Brödtext
+                      Node {
+                          width: Val::Percent(90.0),
+                          height: Val::Percent(70.0),
+                          left: Val::Percent(5.0),
+                          ..default()
+                      },
+                      Text::new(match upgrade_type {
+                          UpgradeTypes::Cannon => "The Cannon shoots a projectile towards the nearest item. Upgrades increase the amount of cannons.".to_string(),
+                          UpgradeTypes::Thrusters => "The thruster moves the ship. Upgrades increase acceleration.".to_string(),
+                          UpgradeTypes::Health => "The shield protects the ship from damage (health). Upgrades increase the ships health.".to_string(),
+                          UpgradeTypes::Electricity  => "The High Voltage Field generator creates a nearby circle which damages enemies it touches. Upgrades increase the radius and damge.".to_string(),
+                          _ => "unkown upgrade".to_string(),
+                      }),
+                      TextFont {
+                          font: ui_assets.font.clone(),
+                          font_size: 16.0,
+                          ..default()
+                      },
+                      TextColor(Color::srgb(1.0, 1.0, 1.0)),
+                  )],
     )
 }
 
