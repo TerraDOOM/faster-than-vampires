@@ -53,6 +53,10 @@ pub struct LevelAssets {
     background: Handle<Image>,
     #[dependency]
     planet1: Handle<Image>,
+    #[dependency]
+    planet2: Handle<Image>,
+    #[dependency]
+    planet3: Handle<Image>,
 }
 
 #[derive(Resource, Asset, Clone, Reflect)]
@@ -78,11 +82,16 @@ impl FromWorld for LevelAssets {
         Self {
             music: assets.load("audio/music/Fluffing A Duck.ogg"),
             background: assets.load_with_settings("images/level/background.png", make_nearest),
-            planet1: assets.load_with_settings("images/mascot.png", make_nearest),
+            planet1: assets.load_with_settings("images/level/Planet1.png", make_nearest),
+            planet2: assets.load_with_settings("images/level/Planet2.png", make_nearest),
+            planet3: assets.load_with_settings("images/level/planet3.png", make_nearest),
         }
     }
 }
 
+#[derive(Component, Debug, Clone, Copy, PartialEq, Eq, Default, Reflect)]
+#[reflect(Component)]
+pub struct BackgroundAccess;
 /// A system that spawns the main level.
 pub fn spawn_level(
     mut commands: Commands,
@@ -93,31 +102,82 @@ pub fn spawn_level(
     mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
 ) {
     commands.spawn((
+        Name::new("Background"),
+        Transform::from_xyz(0.0, 0.0, -1.0),
+        BackgroundAccess,
+        Sprite {
+            color: Color::linear_rgba(0.0, 0.0, 0.0, 0.9),
+            custom_size: Some(Vec2 {
+                x: 1280.0,
+                y: 960.0,
+            }),
+            ..default()
+        },
+        children![
+            Transform::from_xyz(0.0, 0.0, -2.0),
+            Sprite {
+                image: level_assets.background.clone(),
+                custom_size: Some(Vec2 {
+                    x: 1280.0,
+                    y: 960.0,
+                }),
+                ..default()
+            },
+        ],
+    ));
+
+    commands.spawn((
         Name::new("Level"),
         Transform::from_xyz(0.0, 0.0, -1.0),
         Visibility::default(),
         StateScoped(Screen::Gameplay),
-        Sprite {
-            image: level_assets.background.clone(),
-            custom_size: Some(Vec2 {
-                x: 1920.0,
-                y: 1080.0,
-            }),
-            ..default()
-        },
         children![
             gen_player(400.0, &player_assets, &mut texture_atlas_layouts),
             (
                 Name::new("Gameplay Music"),
                 music(level_assets.music.clone())
             ),
-            gen_goon(&entity_assets)
+            gen_goon(&entity_assets),
+            map_gen(&level_assets),
         ],
     ));
     commands.spawn(gen_UI(&ui_assets));
 
     generate_buy_menu(commands, &ui_assets);
     //commands.spawn(gen_shop(&ui_assets));
+}
+
+#[repr(usize)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+pub enum PlanetType {
+    GreenPlanet,
+    LavaPlanet,
+    EarthPlanet,
+}
+
+#[derive(Component)]
+pub struct Planet;
+pub fn gen_planet(assets: &LevelAssets, position: Vec2, planet_name: PlanetType) -> impl Bundle {
+    println!("Planet spawned");
+
+    (
+        Planet,
+        Sprite {
+            image: match planet_name {
+                PlanetType::GreenPlanet => assets.planet3.clone(),
+                PlanetType::LavaPlanet => assets.planet2.clone(),
+                PlanetType::EarthPlanet => assets.planet1.clone(),
+                _ => assets.planet1.clone(),
+            },
+            custom_size: Some(Vec2 { x: 128.0, y: 128.0 }),
+            ..default()
+        },
+        Transform::from_xyz(position.x, position.y, 0.0),
+    )
+}
+
+pub fn map_gen(assets: &LevelAssets) -> impl Bundle {
+    (gen_planet(assets, Vec2::new(0.0, 0.0), PlanetType::EarthPlanet));
 }
 
 #[derive(Component, Debug, Clone, Copy, PartialEq, Eq, Default, Reflect)]
