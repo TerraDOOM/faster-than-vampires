@@ -52,6 +52,10 @@ pub struct UIAssets {
     pub font: Handle<Font>,
     #[dependency]
     pub exclamation: Handle<Image>,
+    #[dependency]
+    pub button1: Handle<Image>,
+    #[dependency]
+    pub button2: Handle<Image>,
 }
 
 impl FromWorld for UIAssets {
@@ -61,6 +65,8 @@ impl FromWorld for UIAssets {
         Self {
             font: assets.load("FiraSans.ttf"),
             exclamation: assets.load_with_settings("images/entities/Point.png", make_nearest),
+            button1: assets.load_with_settings("images/ui/Main_button_clicked.png", make_nearest),
+            button2: assets.load_with_settings("images/ui/Main_button_unclicked.png", make_nearest),
         }
     }
 }
