@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use avian2d::prelude::*;
 use bevy::prelude::*;
 
@@ -63,9 +65,6 @@ impl FromWorld for WeaponAssets {
 }
 
 #[derive(Component)]
-pub struct Laser {}
-
-#[derive(Component)]
 pub struct Cannon {
     timer: Timer,
 }
@@ -109,6 +108,15 @@ pub fn spawn_cannons(cannon: &Handle<Image>, n: usize) -> Vec<impl Bundle> {
     }
 
     cannons
+}
+
+#[derive(Component)]
+pub struct Laser {
+    firing: bool,
+    level: usize,
+    fire: Duration,
+    cooldown: Duration,
+    timer: Timer,
 }
 
 pub fn fire_cannon(
@@ -185,4 +193,10 @@ pub fn fire_cannon(
                 },
             );
     }
+}
+
+fn spawn_laser() {}
+
+fn fire_laser(laser: Query<(&GlobalTransform, &Laser, &RayCaster)>) {
+    for (transform, laser, raycaster) in laser {}
 }
