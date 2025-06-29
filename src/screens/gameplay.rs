@@ -12,8 +12,11 @@ use avian2d::prelude::Gravity;
 use bevy::{input::common_conditions::input_just_pressed, prelude::*, ui::Val::*};
 use upgrade_menu::generate_buy_menu;
 
-use crate::{menus::Menu, screens::Screen, Pause};
+use crate::{menus::Menu, screens::Screen, AppSystems, PausableSystems, Pause};
 use level::spawn_level;
+
+#[derive(SystemSet, Debug, Clone, Copy, Eq, PartialEq, Hash, PartialOrd, Ord)]
+struct GameplayLogic;
 
 pub(super) fn plugin(app: &mut App) {
     app.add_plugins((
@@ -52,6 +55,16 @@ pub(super) fn plugin(app: &mut App) {
     app.add_systems(
         OnEnter(Menu::None),
         unpause.run_if(in_state(Screen::Gameplay)),
+    );
+
+    app.configure_sets(
+        Update,
+        GameplayLogic.in_set(PausableSystems).run_if(
+            resource_exists::<level::LevelAssets>
+                .and(resource_exists::<player::PlayerAssets>)
+                .and(resource_exists::<enemies::EntityAssets>)
+                .and(any_with_component(player::Player)),
+        ),
     );
 
     app.insert_resource(Gravity(Vec2::ZERO));

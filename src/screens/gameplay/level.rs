@@ -159,7 +159,7 @@ pub fn spawn_level(
             gen_flagship(&entity_assets),
         ],
     ));
-    commands.spawn(gen_UI(&ui_assets));
+    commands.spawn(gen_ui(&ui_assets));
 
     generate_buy_menu(commands, &ui_assets);
     //commands.spawn(gen_shop(&ui_assets));
@@ -259,7 +259,7 @@ pub struct UIBox;
 #[reflect(Component)]
 pub struct UIPostition;
 
-pub fn gen_UI(UI_assets: &Res<UIAssets>) -> impl Bundle {
+pub fn gen_ui(ui_assets: &Res<UIAssets>) -> impl Bundle {
     (
         Name::new("UIBox"),
         UIBox,
@@ -288,7 +288,7 @@ pub fn gen_UI(UI_assets: &Res<UIAssets>) -> impl Bundle {
                 UIPostition,
                 Text::new("Loading X"),
                 TextFont {
-                    font: UI_assets.font.clone(),
+                    font: ui_assets.font.clone(),
                     font_size: 33.0,
                     ..default()
                 },
