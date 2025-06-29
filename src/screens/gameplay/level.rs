@@ -65,13 +65,17 @@ pub struct LevelAssets {
 pub struct UIAssets {
     #[dependency]
     pub font: Handle<Font>,
+    #[dependency]
+    pub exclamation: Handle<Image>,
 }
 
 impl FromWorld for UIAssets {
     fn from_world(world: &mut World) -> Self {
+        use crate::util::make_nearest;
         let assets = world.resource::<AssetServer>();
         Self {
             font: assets.load("FiraSans.ttf"),
+            exclamation: assets.load_with_settings("images/entities/Point.png", make_nearest),
         }
     }
 }
@@ -92,6 +96,10 @@ impl FromWorld for LevelAssets {
 
 #[derive(Component, Debug, Clone, Copy, PartialEq, Eq, Default, Reflect)]
 #[reflect(Component)]
+pub struct ObjectiveMarker;
+
+#[derive(Component, Debug, Clone, Copy, PartialEq, Eq, Default, Reflect)]
+#[reflect(Component)]
 pub struct BackgroundAccess;
 /// A system that spawns the main level.
 pub fn spawn_level(
@@ -107,24 +115,24 @@ pub fn spawn_level(
         Transform::from_xyz(0.0, 0.0, -1.0),
         BackgroundAccess,
         Sprite {
-            color: Color::linear_rgba(1.0, 0.0, 0.0, 0.9),
+            image: level_assets.background.clone(),
             custom_size: Some(Vec2 {
-                x: 1280.0,
-                y: 960.0,
+                x: 1920.0,
+                y: 1080.0,
             }),
             ..default()
         },
-        children![
-            Transform::from_xyz(0.0, 0.0, -2.0),
-            Sprite {
-                image: level_assets.background.clone(),
-                custom_size: Some(Vec2 {
-                    x: 1280.0,
-                    y: 960.0,
-                }),
-                ..default()
-            },
-        ],
+    ));
+
+    commands.spawn((
+        Name::new("ObjectiveMarker"),
+        Transform::from_xyz(0.0, 0.0, -1.0),
+        ObjectiveMarker,
+        Sprite {
+            color: Color::linear_rgba(1.0, 0.0, 0.0, 0.9),
+            custom_size: Some(Vec2 { x: 32.0, y: 32.0 }),
+            ..default()
+        },
     ));
 
     commands.spawn((
@@ -140,11 +148,26 @@ pub fn spawn_level(
             ),
             gen_planet(
                 &level_assets,
+                &ui_assets,
                 Vec2::new(128.0, 128.0),
-                PlanetType::LavaPlanet
+                PlanetType::EarthPlanet,
+                true
+            ),
+            gen_planet(
+                &level_assets,
+                &ui_assets,
+                Vec2::new(2000.0, 0.0),
+                PlanetType::LavaPlanet,
+                false
+            ),
+            gen_planet(
+                &level_assets,
+                &ui_assets,
+                Vec2::new(3000.0, 0.0),
+                PlanetType::GreenPlanet,
+                false
             ),
             gen_flagship(&entity_assets),
-            map_gen(&level_assets),
         ],
     ));
     commands.spawn(gen_UI(&ui_assets));
@@ -162,15 +185,27 @@ pub enum PlanetType {
 }
 
 #[derive(Component)]
+pub struct ShopMarker;
+
+#[derive(Component)]
 pub struct Planet {
     pub x: f32,
     pub y: f32,
+    pub has_shopped: bool,
 }
-pub fn gen_planet(assets: &LevelAssets, position: Vec2, planet_name: PlanetType) -> impl Bundle {
-    println!("Planet spawned");
-
+pub fn gen_planet(
+    assets: &LevelAssets,
+    ui_assets: &UIAssets,
+    position: Vec2,
+    planet_name: PlanetType,
+    first_planet: bool,
+) -> impl Bundle {
     (
-        Planet { x: 0.0, y: 0.0 },
+        Planet {
+            x: position.x,
+            y: position.y,
+            has_shopped: first_planet,
+        },
         Sprite {
             image: match planet_name {
                 PlanetType::GreenPlanet => assets.planet3.clone(),
@@ -178,17 +213,31 @@ pub fn gen_planet(assets: &LevelAssets, position: Vec2, planet_name: PlanetType)
                 PlanetType::EarthPlanet => assets.planet1.clone(),
                 _ => assets.planet1.clone(),
             },
-            custom_size: Some(Vec2 { x: 128.0, y: 128.0 }),
+            custom_size: Some(Vec2 { x: 512.0, y: 512.0 }),
             ..default()
         },
         Transform::from_xyz(position.x, position.y, -0.5),
+        if !first_planet {
+            children![(
+                ShopMarker,
+                Sprite {
+                    image: ui_assets.exclamation.clone(),
+                    custom_size: Some(Vec2 { x: 128.0, y: 128.0 }),
+                    ..default()
+                },
+            )]
+        } else {
+            children![(
+                ShopMarker,
+                Sprite {
+                    color: Color::linear_rgba(1.0, 0.0, 0.0, 0.0),
+                    custom_size: Some(Vec2 { x: 32.0, y: 32.0 }),
+                    ..default()
+                },
+            )]
+        },
     )
 }
-
-pub fn map_gen(assets: &LevelAssets) -> impl Bundle {
-    (gen_planet(assets, Vec2::new(0.0, 0.0), PlanetType::EarthPlanet));
-}
-
 #[derive(Component, Debug, Clone, Copy, PartialEq, Eq, Default, Reflect)]
 #[reflect(Component)]
 pub struct UIBox;

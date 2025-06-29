@@ -1,5 +1,7 @@
 //! Player-specific behavior.
 
+use std::collections::HashMap;
+
 use avian2d::prelude::*;
 use bevy::{
     image::{ImageLoaderSettings, ImageSampler},
@@ -12,6 +14,7 @@ use super::{
     combat::{Damage, Health},
     enemies::{Ship, ShipType},
     movement::{MovementController, ScreenWrap},
+    upgrade_menu::{UpgradeTypes, Upgrades},
 };
 
 pub(super) fn plugin(app: &mut App) {
@@ -58,6 +61,13 @@ pub fn gen_player(
         },
         RigidBody::Dynamic,
         Collider::capsule(0.75, 1.5),
+        Upgrades {
+            gotten_upgrades: HashMap::from([
+                (UpgradeTypes::Cannon, 1),
+                (UpgradeTypes::Health, 1),
+                (UpgradeTypes::Thrusters, 1),
+            ]),
+        },
         Mass(1.0),
         ExternalTorque::default().with_persistence(false),
         ExternalImpulse::default(),

@@ -14,7 +14,7 @@
 //! consider using a [fixed timestep](https://github.com/bevyengine/bevy/blob/main/examples/movement/physics_in_fixed_timestep.rs).
 
 use avian2d::prelude::*;
-use bevy::{prelude::*, window::PrimaryWindow};
+use bevy::{ecs::query, prelude::*, window::PrimaryWindow};
 use std::f32::consts::PI;
 
 use crate::{screens::Screen, AppSystems, PausableSystems};
@@ -140,7 +140,7 @@ fn update_camera(
         >,
     >,
     planets: Query<
-        (&mut Transform, &Planet),
+        (&mut Transform, &Planet, &Children),
         (
             Without<Camera2d>,
             Without<Player>,
@@ -171,8 +171,7 @@ fn update_camera(
     background.translation = camera.translation * 0.95 - Vec3::new(0.0, 0.0, 5.0);
 
     //Planet paralaxing
-    for (mut transform, init_position) in planets {
-        transform.translation =
-            Vec3::new(init_position.x, init_position.y, -0.5) + direction * 0.25;
+    for (mut transform, init_position, children) in planets {
+        transform.translation = Vec3::new(init_position.x, init_position.y, -0.5) + direction * 0.9;
     }
 }

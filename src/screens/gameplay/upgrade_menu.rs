@@ -1,4 +1,5 @@
 use bevy::{input::common_conditions::input_just_pressed, prelude::*};
+use std::collections::HashMap;
 
 use crate::{menus::Menu, screens::Screen, theme::widget};
 
@@ -11,6 +12,22 @@ pub(super) fn plugin(app: &mut App) {
         Update,
         go_back.run_if(in_state(Menu::Buy).and(input_just_pressed(KeyCode::Escape))),
     );
+}
+
+#[repr(usize)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+pub enum UpgradeTypes {
+    Cannon,
+    Missile,
+    Laser,
+    Electricity,
+    Health,
+    Thrusters,
+}
+
+#[derive(Component)]
+pub struct Upgrades {
+    pub gotten_upgrades: HashMap<UpgradeTypes, usize>,
 }
 
 pub fn kill_buy_menu(mut uishop_item: Query<&mut Node, With<UIShop>>) {
