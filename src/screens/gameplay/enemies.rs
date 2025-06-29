@@ -68,7 +68,7 @@ pub fn gen_goon(assets: &EntityAssets) -> impl Bundle {
 }
 
 #[derive(Component, Debug)]
-pub struct EntityFlagship;
+pub struct FlagshipAI;
 pub fn gen_flagship(assets: &EntityAssets) -> impl Bundle {
     let ship = Ship {
         shiptype: ShipType::Flagship,
@@ -79,7 +79,7 @@ pub fn gen_flagship(assets: &EntityAssets) -> impl Bundle {
 
     (
         Enemy,
-        EntityFlagship,
+        FlagshipAI,
         Sprite {
             image: assets.flagship.clone(),
             custom_size: Some(Vec2 { x: 512.0, y: 512.0 }),
@@ -90,7 +90,7 @@ pub fn gen_flagship(assets: &EntityAssets) -> impl Bundle {
 }
 
 #[derive(Component, Debug)]
-pub struct EntityAsteroid {
+pub struct AsteroidAI {
     health: u32,
 }
 
@@ -103,7 +103,7 @@ pub fn gen_asteroid(assets: &EntityAssets, position: Vec2, init_velocity: Vec2) 
     };
     (
         gen_enemy(asteroid, assets, init_velocity),
-        EntityAsteroid { health: 3 },
+        AsteroidAI { health: 3 },
     )
 }
 

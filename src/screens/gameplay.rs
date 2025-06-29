@@ -6,6 +6,8 @@ mod movement;
 mod player;
 mod upgrade_menu;
 
+mod animation;
+
 use avian2d::prelude::Gravity;
 use bevy::{input::common_conditions::input_just_pressed, prelude::*, ui::Val::*};
 use upgrade_menu::generate_buy_menu;
