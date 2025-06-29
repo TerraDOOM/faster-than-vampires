@@ -41,6 +41,7 @@ pub fn gen_enemy(ship: Ship, assets: &EntityAssets, init_velocity: Vec2) -> impl
         Sprite {
             image: match ship.shiptype {
                 ShipType::EmpireGoon => assets.empire_goon.clone(),
+                ShipType::PirateShip => assets.empire_goon.clone(),
                 ShipType::Asteroid => assets.asteroid.clone(),
                 _ => assets.empire_goon.clone(),
             },
@@ -56,15 +57,16 @@ pub fn gen_enemy(ship: Ship, assets: &EntityAssets, init_velocity: Vec2) -> impl
 
 #[derive(Component, Debug)]
 pub struct GoonAI;
-pub fn gen_goon(assets: &EntityAssets) -> impl Bundle {
+pub fn gen_goon(assets: &EntityAssets, position: Vec2) -> impl Bundle {
+    println!("goon generated");
     let ship = Ship {
         shiptype: ShipType::EmpireGoon,
-        position: Vec2::new(0.0, 0.0),
+        position: position,
         lifetime: Instant::now(),
         weapons: Vec::new(),
     };
 
-    (gen_enemy(ship, assets, Vec2::new(0.0, 0.0)), GoonAI);
+    (gen_enemy(ship, assets, Vec2::new(0.0, 0.0)), GoonAI)
 }
 
 #[derive(Component, Debug)]
@@ -78,7 +80,6 @@ pub fn gen_flagship(assets: &EntityAssets) -> impl Bundle {
     };
 
     (
-        Enemy,
         FlagshipAI,
         Sprite {
             image: assets.flagship.clone(),
@@ -129,8 +130,8 @@ impl FromWorld for EntityAssets {
         let assets = world.resource::<AssetServer>();
         Self {
             flagship: assets.load_with_settings("images/entities/Flagship.png", make_nearest),
-            empire_goon: assets.load_with_settings("images/mascot.png", make_nearest),
-            pirate_ship: assets.load_with_settings("images/mascot.png", make_nearest),
+            empire_goon: assets.load_with_settings("images/entities/Enemy1.png", make_nearest),
+            pirate_ship: assets.load_with_settings("images/entities/Enemy2.png", make_nearest),
             outpost: assets.load_with_settings("images/mascot.png", make_nearest),
             asteroid: assets.load_with_settings("images/entities/Astroid 1 .png", make_nearest),
         }

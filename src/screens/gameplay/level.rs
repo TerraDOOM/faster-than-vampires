@@ -10,7 +10,7 @@ use crate::{
     menus::Menu,
     screens::{
         gameplay::{
-            enemies::{gen_asteroid, gen_flagship, EntityAssets},
+            enemies::{gen_asteroid, gen_flagship, gen_goon, EntityAssets},
             upgrade_menu::generate_buy_menu,
         },
         Screen,
@@ -331,7 +331,7 @@ pub fn world_update(
 
     for (planet_transform, mut planet) in planets {
         if !planet.has_shopped
-            && (player.translation - planet_transform.translation).length() < 128.0
+            && (player.translation - planet_transform.translation).length() < 200.0
         {
             planet.has_shopped = true;
             next_menu.set(Menu::Buy);
@@ -344,8 +344,8 @@ pub fn world_update(
         spawn_enemy(
             commands,
             entity_assets,
-            30,
-            ShipType::Asteroid,
+            10,
+            ShipType::EmpireGoon,
             player.translation,
         );
     } else if player.translation.x < LVL3X {
@@ -376,16 +376,32 @@ pub fn spawn_enemy(
             Vec2::new(rng.gen_range(-10..10) as f32, rng.gen_range(-10..10) as f32) / 20.0;
         let rand_speed = (rng.gen_range(100..300) as f32) / 1500.0;
 
-        commands.spawn((
-            Name::new("Asteroid"),
-            Transform::default(),
-            Visibility::default(),
-            StateScoped(Screen::Gameplay),
-            children![gen_asteroid(
-                &entity_assets,
-                position,
-                -(relative_postion + rand_deviation) * rand_speed
-            )],
-        ));
+        match ship_type {
+            ShipType::Asteroid => commands.spawn((
+                Name::new("Asteroid"),
+                Transform::default(),
+                Visibility::default(),
+                StateScoped(Screen::Gameplay),
+                children![gen_asteroid(
+                    &entity_assets,
+                    position,
+                    -(relative_postion + rand_deviation) * rand_speed
+                )],
+            )),
+            ShipType::EmpireGoon => commands.spawn((
+                Name::new("Goon"),
+                Transform::default(),
+                Visibility::default(),
+                StateScoped(Screen::Gameplay),
+                children![gen_goon(&entity_assets, position,)],
+            )),
+            _ => commands.spawn((
+                Name::new("???"),
+                Transform::default(),
+                Visibility::default(),
+                StateScoped(Screen::Gameplay),
+                children![gen_goon(&entity_assets, position,)],
+            )),
+        };
     }
 }
