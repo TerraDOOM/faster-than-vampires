@@ -60,8 +60,6 @@ pub fn generate_buy_menu(
     ui_assets: Res<UIAssets>,
     upgrades: Single<&Upgrades, Without<UIShop>>,
 ) {
-    println!("Open buy menu!!");
-
     let drafted_upgrades = draft_upgrades(&upgrades.gotten_upgrades, PlanetType::EarthPlanet);
 
     commands.spawn((

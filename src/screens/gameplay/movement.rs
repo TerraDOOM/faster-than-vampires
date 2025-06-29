@@ -16,11 +16,15 @@
 use avian2d::prelude::*;
 use bevy::{prelude::*, window::PrimaryWindow};
 
-use crate::{screens::Screen, AppSystems, PausableSystems};
+use crate::{
+    screens::{gameplay::upgrade_menu::UpgradeTypes, Screen},
+    AppSystems, PausableSystems,
+};
 
 use super::{
     level::{BackgroundAccess, Planet},
     player::Player,
+    upgrade_menu::{UIShop, Upgrades},
 };
 
 //use super::player::Player;
@@ -74,15 +78,22 @@ fn apply_movement(
         &mut ExternalImpulse,
         &mut ExternalTorque,
     )>,
+    upgrades: Single<&Upgrades>,
 ) {
     const ROTATION_SPEED: f32 = 30.0 * 100.0;
-    const THRUST: f32 = 10.0;
+
+    let thrust;
+    if let Some(engine_lvl) = upgrades.gotten_upgrades.get(&UpgradeTypes::Thrusters) {
+        thrust = (*engine_lvl as f32) * 10.0;
+    } else {
+        thrust = 10.0;
+    }
     for (controller, transform, mut linvel, mut angvel) in &mut movement_query {
         let rotation = -controller.intent.x * ROTATION_SPEED * time.delta_secs();
 
         angvel.apply_torque(rotation);
         linvel.apply_impulse(
-            (transform.rotation * (controller.intent.y * THRUST * Vec2::Y).extend(0.0)).xy(),
+            (transform.rotation * (controller.intent.y * thrust * Vec2::Y).extend(0.0)).xy(),
         );
     }
 }
