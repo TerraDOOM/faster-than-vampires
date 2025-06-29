@@ -37,6 +37,7 @@ impl AnimatedSprite {
             ),
             frame: 0,
             total_frames: frames,
+            animation_type,
         }
     }
 
@@ -59,7 +60,7 @@ pub fn update_animations(
         if animation.animation_type == AnimationType::Once
             && animation.frame >= animation.total_frames
         {
-            commands.despawn(ent);
+            commands.get_entity(ent).unwrap().despawn();
             return;
         }
         animation.frame %= animation.total_frames;
