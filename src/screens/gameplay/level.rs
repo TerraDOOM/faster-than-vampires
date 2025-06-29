@@ -115,11 +115,6 @@ pub fn spawn_level(
         Visibility::default(),
         StateScoped(Screen::Gameplay),
         children![
-            gen_player(400.0, &player_assets),
-            (
-                Name::new("Gameplay Music"),
-                music(level_assets.music.clone())
-            ),
             gen_planet(
                 &level_assets,
                 &ui_assets,
@@ -145,9 +140,6 @@ pub fn spawn_level(
         ],
     ));
     commands.spawn(gen_ui(&ui_assets));
-
-    generate_buy_menu(commands, &ui_assets);
-    //commands.spawn(gen_shop(&ui_assets));
 }
 
 #[repr(usize)]

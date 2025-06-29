@@ -26,6 +26,12 @@ pub struct Health(pub i32);
 #[derive(Component)]
 pub struct Dead;
 
+#[derive(Component)]
+pub struct HasWeapon;
+
+#[derive(Component)]
+pub struct NormalGun {}
+
 fn process_asteroid_collisions(
     mut commands: Commands,
     collisions: Collisions,

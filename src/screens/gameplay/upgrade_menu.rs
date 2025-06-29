@@ -3,10 +3,13 @@ use std::collections::HashMap;
 
 use crate::menus::Menu;
 
-use super::level::UIAssets;
+use super::{
+    level::{PlanetType, UIAssets},
+    GameplayLogic,
+};
 
 pub(super) fn plugin(app: &mut App) {
-    app.add_systems(OnEnter(Menu::Buy), open_buy_menu);
+    app.add_systems(OnEnter(Menu::Buy), generate_buy_menu.in_set(GameplayLogic));
     app.add_systems(OnExit(Menu::Buy), kill_buy_menu);
     app.add_systems(
         Update,
@@ -36,19 +39,45 @@ pub fn kill_buy_menu(mut uishop_item: Query<&mut Node, With<UIShop>>) {
     }
 }
 
-pub fn open_buy_menu(commands: Commands, mut uishop_item: Query<&mut Node, With<UIShop>>) {
-    if uishop_item.is_empty() {
-        //        generate_buy_menu(commands, ui_assets);
-        todo!();
-    } else {
-        for mut item in &mut uishop_item {
-            item.display = Display::Flex;
-        }
-    }
+// pub fn open_buy_menu(
+//     commands: Commands,
+//     mut uishop_item: Query<(&Children, &mut Node), With<UIShop>>,
+//     upgrades: Single<&Upgrades, Without<UIShop>>,
+// ) {
+//     let uishop = uishop_item.single().unwrap();
+//     let children = uishop.0;
+
+//     if uishop_item.is_empty() {
+//        generate_buy_menu(commands, ui_assets);
+//         todo!();
+//     } else {
+//         let drafted_upgrades = draft_upgrades(&upgrades.gotten_upgrades, PlanetType::EarthPlanet);
+//         for mut item in &mut uishop_item {
+//             item.display = Display::Flex;
+//         }
+//     }
+//}
+
+pub fn draft_upgrades(
+    gotten_upgrades: &HashMap<UpgradeTypes, usize>,
+    planet: PlanetType,
+) -> (UpgradeTypes, UpgradeTypes, UpgradeTypes) {
+    (
+        UpgradeTypes::Cannon,
+        UpgradeTypes::Electricity,
+        UpgradeTypes::Thrusters,
+    )
 }
 
-pub fn generate_buy_menu(mut commands: Commands, ui_assets: &Res<UIAssets>) {
+pub fn generate_buy_menu(
+    mut commands: Commands,
+    ui_assets: Res<UIAssets>,
+    upgrades: Single<&Upgrades, Without<UIShop>>,
+) {
     println!("Open buy menu!!");
+
+    let drafted_upgrades = draft_upgrades(&upgrades.gotten_upgrades, PlanetType::EarthPlanet);
+
     commands.spawn((
         Name::new("UIBox"),
         UIShop,
@@ -61,7 +90,6 @@ pub fn generate_buy_menu(mut commands: Commands, ui_assets: &Res<UIAssets>) {
             align_items: AlignItems::FlexEnd,
             justify_content: JustifyContent::FlexEnd,
             flex_direction: FlexDirection::Column,
-            display: Display::None,
             ..default()
         },
         ZIndex(2),
@@ -81,57 +109,38 @@ pub fn generate_buy_menu(mut commands: Commands, ui_assets: &Res<UIAssets>) {
                     ..default()
                 },
                 children![
-                    (
-                        UIOption1,
-                        Node {
-                            width: Val::Percent(30.0),
-                            height: Val::Percent(90.0),
-                            left: Val::Percent(2.5),
-                            ..default()
-                        },
-                        BackgroundColor(Color::srgb(1.0, 0.0, 0.0))
-                    ),
-                    (
-                        UIOption2,
-                        Node {
-                            width: Val::Percent(30.0),
-                            height: Val::Percent(90.0),
-                            left: Val::Percent(5.0),
-                            ..default()
-                        },
-                        BackgroundColor(Color::srgb(0.0, 1.0, 0.0))
-                    ),
-                    (
-                        UIOption3,
-                        Node {
-                            width: Val::Percent(30.0),
-                            height: Val::Percent(90.0),
-                            left: Val::Percent(7.5),
-                            ..default()
-                        },
-                        BackgroundColor(Color::srgb(0.0, 0.0, 1.0))
-                    )
+                    gen_shop_icon(&ui_assets, drafted_upgrades.0, 0),
+                    gen_shop_icon(&ui_assets, drafted_upgrades.1, 0),
+                    gen_shop_icon(&ui_assets, drafted_upgrades.2, 0),
                 ],
             ),
         ],
     ));
 }
 
+pub fn gen_shop_icon(
+    ui_assets: &Res<UIAssets>,
+    upgrade_type: UpgradeTypes,
+    upgrade_level: usize,
+) -> impl Bundle {
+    (
+        Node {
+            width: Val::Percent(30.0),
+            height: Val::Percent(90.0),
+            left: Val::Percent(7.5),
+            ..default()
+        },
+        BackgroundColor(match upgrade_type {
+            UpgradeTypes::Cannon => Color::srgb(0.0, 0.0, 1.0),
+            UpgradeTypes::Thrusters => Color::srgb(0.0, 1.0, 0.0),
+            _ => Color::srgb(1.0, 1.0, 0.0),
+        }),
+    )
+}
+
 #[derive(Component, Debug, Clone, Copy, PartialEq, Eq, Default, Reflect)]
 #[reflect(Component)]
 pub struct UIShop;
-
-#[derive(Component, Debug, Clone, Copy, PartialEq, Eq, Default, Reflect)]
-#[reflect(Component)]
-pub struct UIOption1;
-
-#[derive(Component, Debug, Clone, Copy, PartialEq, Eq, Default, Reflect)]
-#[reflect(Component)]
-pub struct UIOption2;
-
-#[derive(Component, Debug, Clone, Copy, PartialEq, Eq, Default, Reflect)]
-#[reflect(Component)]
-pub struct UIOption3;
 
 // pub fn gen_shop(ui_assets: &Res<UIAssets>) -> impl Bundle {
 //     (

@@ -1,6 +1,6 @@
 //! Player-specific behavior.
 
-use std::collections::HashMap;
+use std::{collections::HashMap, f32::consts::PI};
 
 use avian2d::prelude::*;
 use bevy::{
@@ -52,8 +52,6 @@ pub fn gen_player(max_speed: f32, player_assets: &PlayerAssets) -> impl Bundle {
             max_speed,
             ..default()
         },
-        RigidBody::Dynamic,
-        Collider::capsule(0.75, 1.5),
         Upgrades {
             gotten_upgrades: HashMap::from([
                 (UpgradeTypes::Cannon, 1),
@@ -61,13 +59,23 @@ pub fn gen_player(max_speed: f32, player_assets: &PlayerAssets) -> impl Bundle {
                 (UpgradeTypes::Thrusters, 1),
             ]),
         },
+        player_physics_params(),
+        Health(100),
+    )
+}
+
+fn player_physics_params() -> impl Bundle {
+    (
+        RigidBody::Dynamic,
+        Collider::capsule(0.75, 1.5),
         Mass(1.0),
         ExternalTorque::default().with_persistence(false),
         ExternalImpulse::default(),
-        AngularDamping(0.8),
-        LinearDamping(0.8),
+        AngularDamping(5.0),
+        LinearDamping(2.0),
+        MaxLinearSpeed(100.0),
+        MaxAngularSpeed(PI),
         CollisionEventsEnabled,
-        Health(100),
     )
 }
 
