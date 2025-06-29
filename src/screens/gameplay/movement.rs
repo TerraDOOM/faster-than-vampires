@@ -113,8 +113,11 @@ fn update_camera(
     )>,
 ) {
     let p = {
-        let player = set.p1().single_inner().unwrap();
-        player.translation.xy()
+        if let player = set.p1().single_inner().unwrap() {
+            player.translation.xy()
+        } else {
+            return;
+        }
     };
     let camera_layer = {
         let mut camera = set.p0().single_inner().unwrap();
