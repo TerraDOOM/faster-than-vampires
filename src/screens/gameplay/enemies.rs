@@ -1,9 +1,11 @@
 use std::time::Instant;
 
 use avian2d::prelude::*;
-use bevy::prelude::*;
+use bevy::{math::VectorSpace, prelude::*};
 
 use crate::{asset_tracking::LoadResource, PausableSystems};
+
+use super::player::Player;
 
 #[repr(usize)]
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
@@ -13,6 +15,7 @@ pub enum ShipType {
     PirateShip,
     Outpoust,
     Asteroid,
+    Rammer,
 }
 
 #[derive(Component, Debug, Clone)]
@@ -28,6 +31,7 @@ pub(super) fn plugin(app: &mut App) {
     app.load_resource::<EntityAssets>();
 
     app.add_systems(Update, process_goon_ai.in_set(PausableSystems));
+    app.add_systems(Update, process_rammer_ai.in_set(PausableSystems));
 }
 
 #[derive(Component)]
@@ -43,6 +47,7 @@ pub fn gen_enemy(ship: Ship, assets: &EntityAssets, init_velocity: Vec2) -> impl
                 ShipType::EmpireGoon => assets.empire_goon.clone(),
                 ShipType::PirateShip => assets.empire_goon.clone(),
                 ShipType::Asteroid => assets.asteroid.clone(),
+                ShipType::Rammer => assets.ramming_ship.clone(),
                 _ => assets.empire_goon.clone(),
             },
             custom_size: Some(Vec2 { x: 64.0, y: 64.0 }),
@@ -92,7 +97,6 @@ pub fn gen_flagship(assets: &EntityAssets) -> impl Bundle {
 
 #[derive(Component, Debug)]
 pub struct AsteroidAI;
-
 pub fn gen_asteroid(assets: &EntityAssets, position: Vec2, init_velocity: Vec2) -> impl Bundle {
     let asteroid = Ship {
         shiptype: ShipType::Asteroid,
@@ -101,6 +105,51 @@ pub fn gen_asteroid(assets: &EntityAssets, position: Vec2, init_velocity: Vec2) 
         weapons: Vec::new(),
     };
     (gen_enemy(asteroid, assets, init_velocity), AsteroidAI)
+}
+
+#[derive(Component, Debug)]
+pub struct RammerAI;
+pub fn gen_rammer(assets: &EntityAssets, position: Vec2, init_velocity: Vec2) -> impl Bundle {
+    let rammer = Ship {
+        shiptype: ShipType::Rammer,
+        position: position,
+        lifetime: Instant::now(),
+        weapons: Vec::new(),
+    };
+    (
+        gen_enemy(rammer, assets, init_velocity),
+        RammerAI,
+        ExternalImpulse::new(Vec2::ZERO),
+        ExternalTorque::default().with_persistence(false),
+    )
+}
+pub fn process_rammer_ai(
+    rammers: Query<
+        (&mut Transform, &mut ExternalImpulse, &mut ExternalTorque),
+        (With<RammerAI>, Without<Player>),
+    >,
+    player: Single<&Transform, (With<Player>, Without<GoonAI>)>,
+) {
+    for (rammer_pos, mut linvel, mut angvel) in rammers {
+        let enemy_forward = (rammer_pos.rotation * Vec3::Y).xy();
+        let to_player = (player.translation.xy() - rammer_pos.translation.xy()).normalize();
+
+        // Get the dot product between the enemy forward vector and the direction to the player.
+        let forward_dot_player = enemy_forward.dot(to_player);
+        //If 1, we are already facing them
+        println!("LOL");
+        if (forward_dot_player - 1.0).abs() < f32::EPSILON {
+            println!("Thrusting")
+        }
+        println!("Rotating");
+        let enemy_right = (rammer_pos.rotation * Vec3::X).xy();
+
+        let right_dot_player = enemy_right.dot(to_player);
+
+        let rotation_sign = -f32::copysign(1.0, right_dot_player);
+
+        angvel.apply_torque(rotation_sign * 1000.0);
+    }
 }
 
 pub fn process_goon_ai(goons: Query<&mut Transform, With<GoonAI>>) {
@@ -119,6 +168,8 @@ pub struct EntityAssets {
     #[dependency]
     pirate_ship: Handle<Image>,
     #[dependency]
+    ramming_ship: Handle<Image>,
+    #[dependency]
     outpost: Handle<Image>,
     #[dependency]
     asteroid: Handle<Image>,
@@ -134,6 +185,7 @@ impl FromWorld for EntityAssets {
             pirate_ship: assets.load_with_settings("images/entities/Enemy2.png", make_nearest),
             outpost: assets.load_with_settings("images/mascot.png", make_nearest),
             asteroid: assets.load_with_settings("images/entities/Astroid 1 .png", make_nearest),
+            ramming_ship: assets.load_with_settings("images/entities/Enemy3.png", make_nearest),
         }
     }
 }

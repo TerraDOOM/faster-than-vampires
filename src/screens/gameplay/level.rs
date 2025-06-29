@@ -10,7 +10,7 @@ use crate::{
     menus::Menu,
     screens::{
         gameplay::{
-            enemies::{gen_asteroid, gen_flagship, gen_goon, EntityAssets},
+            enemies::{gen_asteroid, gen_flagship, gen_goon, gen_rammer, EntityAssets},
             upgrade_menu::generate_buy_menu,
         },
         Screen,
@@ -344,8 +344,8 @@ pub fn world_update(
         spawn_enemy(
             commands,
             entity_assets,
-            10,
-            ShipType::EmpireGoon,
+            30,
+            ShipType::Rammer,
             player.translation,
         );
     } else if player.translation.x < LVL3X {
@@ -394,6 +394,13 @@ pub fn spawn_enemy(
                 Visibility::default(),
                 StateScoped(Screen::Gameplay),
                 children![gen_goon(&entity_assets, position,)],
+            )),
+            ShipType::Rammer => commands.spawn((
+                Name::new("Rammer"),
+                Transform::default(),
+                Visibility::default(),
+                StateScoped(Screen::Gameplay),
+                children![gen_rammer(&entity_assets, position, Vec2::ZERO)],
             )),
             _ => commands.spawn((
                 Name::new("???"),
