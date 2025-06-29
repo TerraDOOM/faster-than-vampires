@@ -15,7 +15,7 @@ pub enum ShipType {
     Asteroid,
 }
 
-#[derive(Component)]
+#[derive(Component, Debug, Clone)]
 pub struct Ship {
     pub shiptype: ShipType,
     pub position: Vec2,
@@ -54,7 +54,7 @@ pub fn gen_enemy(ship: Ship, assets: &EntityAssets, init_velocity: Vec2) -> impl
     )
 }
 
-#[derive(Component)]
+#[derive(Component, Debug)]
 pub struct EntityGoon;
 pub fn gen_goon(assets: &EntityAssets) -> impl Bundle {
     let ship = Ship {
@@ -67,7 +67,7 @@ pub fn gen_goon(assets: &EntityAssets) -> impl Bundle {
     (gen_enemy(ship, assets, Vec2::new(0.0, 0.0)), EntityGoon);
 }
 
-#[derive(Component)]
+#[derive(Component, Debug)]
 pub struct EntityAsteroid {
     health: u32,
 }

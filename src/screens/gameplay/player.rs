@@ -9,7 +9,7 @@ use bevy::{
 use crate::{asset_tracking::LoadResource, AppSystems, PausableSystems};
 
 use super::{
-    combat::Damage,
+    combat::{Damage, Health},
     enemies::{Ship, ShipType},
     movement::{MovementController, ScreenWrap},
 };
@@ -65,35 +65,8 @@ pub fn gen_player(
         LinearDamping(0.8),
         ScreenWrap,
         CollisionEventsEnabled,
+        Health(100),
     )
-}
-
-fn process_asteroid_collisions(
-    mut commands: Commands,
-    collisions: Collisions,
-    player: Single<Entity, With<Player>>,
-    asteroids: Query<&Ship>,
-) {
-    for contact_pair in collisions.collisions_with(*player) {
-        let total_impulse;
-        if contact_pair.collider1 == *player
-            && asteroids
-                .get(contact_pair.collider2)
-                .is_ok_and(|ship| ship.shiptype == ShipType::Asteroid)
-        {
-            total_impulse = contact_pair.total_normal_impulse_magnitude();
-        } else if contact_pair.collider2 == *player
-            && asteroids
-                .get(contact_pair.collider1)
-                .is_ok_and(|ship| ship.shiptype == ShipType::Asteroid)
-        {
-            total_impulse = contact_pair.total_normal_impulse_magnitude();
-        } else {
-            continue;
-        }
-
-        commands.trigger_targets(Damage(total_impulse as u32), *player);
-    }
 }
 
 #[derive(Component, Debug, Clone, Copy, PartialEq, Eq, Default, Reflect)]
@@ -137,6 +110,8 @@ pub struct PlayerAssets {
     #[dependency]
     pub steps: Vec<Handle<AudioSource>>,
     #[dependency]
+    pub crash_sfx: Handle<AudioSource>,
+    #[dependency]
     pub exploded: Handle<Image>,
 }
 
@@ -151,7 +126,8 @@ impl FromWorld for PlayerAssets {
                     settings.sampler = ImageSampler::nearest();
                 },
             ),
-            exploded: assets.load("images/exploded.png"),
+            crash_sfx: assets.load("audio/sound_effects/metal_crash.ogg"),
+            exploded: assets.load("images/explosion.png"),
             steps: vec![
                 assets.load("audio/sound_effects/step1.ogg"),
                 assets.load("audio/sound_effects/step2.ogg"),
