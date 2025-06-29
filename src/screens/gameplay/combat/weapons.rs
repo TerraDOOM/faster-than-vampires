@@ -10,6 +10,8 @@ use crate::{
     },
 };
 
+use super::Damage;
+
 pub fn plugin(app: &mut App) {
     app.register_type::<WeaponAssets>();
     app.load_resource::<WeaponAssets>();
@@ -125,15 +127,23 @@ pub fn fire_cannon(
 
         let pos = cannon_transform.translation();
 
-        commands.spawn((
-            assets.get_laser_shot_sprite(),
-            Transform::from_translation(pos + dir * 10.0),
-            AnimatedSprite::new(30, 15, AnimationType::Repeating),
-            Collider::circle(10.0),
-            CannonBullet,
-            RigidBody::Kinematic,
-            Sensor,
-            LinearVelocity(dir.xy() * 400.0 + player_velocity.0),
-        ));
+        commands
+            .spawn((
+                assets.get_laser_shot_sprite(),
+                Transform::from_translation(pos + dir * 10.0),
+                AnimatedSprite::new(30, 15, AnimationType::Repeating),
+                Collider::circle(10.0),
+                CannonBullet,
+                RigidBody::Kinematic,
+                CollisionEventsEnabled,
+                Sensor,
+                LinearVelocity(dir.xy() * 400.0 + player_velocity.0),
+            ))
+            .observe(
+                |trigger: Trigger<OnCollisionStart>, mut commands: Commands| {
+                    commands.trigger_targets(Damage(50), trigger.collider);
+                    commands.entity(trigger.target()).despawn();
+                },
+            );
     }
 }

@@ -5,7 +5,7 @@ use bevy::{math::VectorSpace, prelude::*};
 
 use crate::{asset_tracking::LoadResource, PausableSystems};
 
-use super::player::Player;
+use super::{animation::AnimatedSprite, player::Player};
 
 #[repr(usize)]
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
@@ -235,7 +235,20 @@ pub struct EntityAssets {
 }
 
 impl EntityAssets {
-    fn get_explosion(&self) -> impl Bundle {}
+    pub fn get_explosion(&self) -> impl Bundle {
+        (
+            Sprite {
+                image: self.explosion.clone(),
+                texture_atlas: Some(TextureAtlas {
+                    layout: self.explosion_layout.clone(),
+                    index: 0,
+                }),
+                custom_size: Some(Vec2::new(32.0, 32.0) * 4.0),
+                ..default()
+            },
+            AnimatedSprite::new(30, 64, super::animation::AnimationType::Once),
+        )
+    }
 }
 
 impl FromWorld for EntityAssets {
@@ -249,6 +262,15 @@ impl FromWorld for EntityAssets {
             outpost: assets.load_with_settings("images/mascot.png", make_nearest),
             asteroid: assets.load_with_settings("images/entities/Astroid 1 .png", make_nearest),
             ramming_ship: assets.load_with_settings("images/entities/Enemy3.png", make_nearest),
+            explosion: assets
+                .load_with_settings("VFX/Flipbooks/TFlip_ExplosionRegular.png", make_nearest),
+            explosion_layout: assets.add(TextureAtlasLayout::from_grid(
+                UVec2::splat(64),
+                8,
+                8,
+                None,
+                None,
+            )),
         }
     }
 }

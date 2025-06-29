@@ -19,7 +19,7 @@ use crate::{
 
 use super::{
     combat::{Damage, Health},
-    enemies::ShipType,
+    enemies::{RammerAI, ShipType},
     player::{gen_player, Player, PlayerAssets},
     GameplayLogic,
 };
@@ -493,7 +493,7 @@ pub fn world_update(
             commands,
             entity_assets,
             10,
-            ShipType::Asteroid,
+            ShipType::Rammer,
             player.translation,
         );
     } else if player.translation.x < LVL3X {
@@ -553,10 +553,15 @@ pub fn spawn_enemy(
                     .observe(
                         |trigger: Trigger<OnCollisionStart>,
                          mut commands: Commands,
-                         player: Single<Entity, With<Player>>| {
+                         trans: Query<&Transform, With<RammerAI>>,
+                         player: Single<Entity, With<Player>>,
+                         assets: Res<EntityAssets>| {
                             commands.trigger_targets(Damage(30), trigger.collider);
                             commands.get_entity(trigger.target()).unwrap().despawn();
-                            commands.spawn(entity_assets.get_explosion());
+                            commands.spawn((
+                                trans.get(trigger.target()).unwrap().clone(),
+                                assets.get_explosion(),
+                            ));
                         },
                     );
             }
