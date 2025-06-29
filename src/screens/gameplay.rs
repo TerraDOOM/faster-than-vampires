@@ -10,9 +10,8 @@ mod animation;
 
 use avian2d::prelude::Gravity;
 use bevy::{input::common_conditions::input_just_pressed, prelude::*, ui::Val::*};
-use upgrade_menu::generate_buy_menu;
 
-use crate::{menus::Menu, screens::Screen, AppSystems, PausableSystems, Pause};
+use crate::{menus::Menu, screens::Screen, PausableSystems, Pause};
 use level::spawn_level;
 
 #[derive(SystemSet, Debug, Clone, Copy, Eq, PartialEq, Hash, PartialOrd, Ord)]

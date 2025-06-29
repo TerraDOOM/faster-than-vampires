@@ -4,7 +4,7 @@ use bevy::prelude::*;
 use crate::{screens::Screen, PausableSystems};
 
 use super::{
-    enemies::{AsteroidAI, Ship, ShipType},
+    enemies::AsteroidAI,
     player::{Player, PlayerAssets},
 };
 

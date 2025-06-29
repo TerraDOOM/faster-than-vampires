@@ -51,7 +51,7 @@ impl AnimatedSprite {
 
 pub fn update_animations(
     mut commands: Commands,
-    mut animations: Query<(Entity, &mut Sprite, &mut AnimatedSprite)>,
+    animations: Query<(Entity, &mut Sprite, &mut AnimatedSprite)>,
     time: Res<Time>,
 ) {
     for (ent, mut sprite, mut animation) in animations {
