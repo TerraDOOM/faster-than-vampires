@@ -107,8 +107,12 @@ pub fn gen_asteroid(assets: &EntityAssets, position: Vec2, init_velocity: Vec2) 
     (gen_enemy(asteroid, assets, init_velocity), AsteroidAI)
 }
 
-#[derive(Component, Debug)]
-pub struct RammerAI;
+#[derive(Component, Debug, Copy, Clone, PartialEq, Eq)]
+pub enum RammerAI {
+    Charging,
+    Aiming,
+}
+
 pub fn gen_rammer(assets: &EntityAssets, position: Vec2, init_velocity: Vec2) -> impl Bundle {
     let rammer = Ship {
         shiptype: ShipType::Rammer,
@@ -118,37 +122,89 @@ pub fn gen_rammer(assets: &EntityAssets, position: Vec2, init_velocity: Vec2) ->
     };
     (
         gen_enemy(rammer, assets, init_velocity),
-        RammerAI,
+        RammerAI::Aiming,
         ExternalImpulse::new(Vec2::ZERO),
+        Mass(1.0),
         ExternalTorque::default().with_persistence(false),
+        LinearDamping(0.8),
+        AngularDamping(0.1),
+        CollisionEventsEnabled,
     )
 }
+
 pub fn process_rammer_ai(
-    rammers: Query<
-        (&mut Transform, &mut ExternalImpulse, &mut ExternalTorque),
-        (With<RammerAI>, Without<Player>),
-    >,
-    player: Single<&Transform, (With<Player>, Without<GoonAI>)>,
+    rammers: Query<(
+        &Transform,
+        &LinearVelocity,
+        &mut ExternalImpulse,
+        &mut LinearDamping,
+        &AngularVelocity,
+        &mut ExternalTorque,
+        &mut AngularDamping,
+        &mut RammerAI,
+    )>,
+    mut gizmos: Gizmos,
+    player: Single<&Transform, With<Player>>,
 ) {
-    for (rammer_pos, mut linvel, mut angvel) in rammers {
+    for (
+        rammer_pos,
+        linvel,
+        mut force,
+        mut linear_damping,
+        angvel,
+        mut torque,
+        mut angular_damping,
+        mut ai,
+    ) in rammers
+    {
         let enemy_forward = (rammer_pos.rotation * Vec3::Y).xy();
-        let to_player = (player.translation.xy() - rammer_pos.translation.xy()).normalize();
+        linear_damping.0 = 0.2;
 
-        // Get the dot product between the enemy forward vector and the direction to the player.
-        let forward_dot_player = enemy_forward.dot(to_player);
-        //If 1, we are already facing them
-        println!("LOL");
-        if (forward_dot_player - 1.0).abs() < f32::EPSILON {
-            println!("Thrusting")
+        if *ai == RammerAI::Aiming {
+            linear_damping.0 = 20.0;
+            angular_damping.0 = 0.1;
+
+            let to_player = (player.translation.xy() - rammer_pos.translation.xy()).normalize();
+
+            gizmos.arrow_2d(
+                rammer_pos.translation.xy(),
+                rammer_pos.translation.xy() + enemy_forward * 100.0,
+                Color::srgba(1.0, 0.0, 0.0, 1.0),
+            );
+
+            // Get the dot product between the enemy forward vector and the direction to the player.
+            let forward_dot_player = enemy_forward.dot(to_player);
+            //If 1, we are already facing them
+            if (forward_dot_player - 1.0).abs() < 0.001 {
+                if angvel.0 > 0.1 {
+                    angular_damping.0 = 10.0;
+                } else {
+                    *ai = RammerAI::Charging;
+                    force.apply_impulse(enemy_forward * 1200.0);
+                }
+                continue;
+            }
+            let enemy_right = (rammer_pos.rotation * Vec3::X).xy();
+
+            let right_dot_player = enemy_right.dot(to_player);
+
+            let rotation_sign = -f32::copysign(1.0, right_dot_player);
+
+            torque.apply_torque(rotation_sign * 300.0);
+        } else if *ai == RammerAI::Charging {
+            angular_damping.0 = 80.0;
+            gizmos.arrow_2d(
+                rammer_pos.translation.xy(),
+                rammer_pos.translation.xy() + enemy_forward * 100.0,
+                Color::srgba(0.0, 1.0, 0.0, 1.0),
+            );
+            if linvel.0.length() < 50.0 {
+                linear_damping.0 = 100.0;
+            }
+            if linvel.0.length() < 2.0 {
+                *ai = RammerAI::Aiming;
+            }
         }
-        println!("Rotating");
-        let enemy_right = (rammer_pos.rotation * Vec3::X).xy();
-
-        let right_dot_player = enemy_right.dot(to_player);
-
-        let rotation_sign = -f32::copysign(1.0, right_dot_player);
-
-        angvel.apply_torque(rotation_sign * 1000000.0);
     }
 }
 
@@ -173,6 +229,13 @@ pub struct EntityAssets {
     outpost: Handle<Image>,
     #[dependency]
     asteroid: Handle<Image>,
+    #[dependency]
+    explosion: Handle<Image>,
+    explosion_layout: Handle<TextureAtlasLayout>,
+}
+
+impl EntityAssets {
+    fn get_explosion(&self) -> impl Bundle {}
 }
 
 impl FromWorld for EntityAssets {

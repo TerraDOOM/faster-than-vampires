@@ -16,7 +16,12 @@ pub(super) fn plugin(app: &mut App) {
 
     app.add_systems(
         Update,
-        (process_asteroid_collisions, process_player_dead).in_set(GameplayLogic),
+        (
+            process_asteroid_collisions,
+            process_player_dead,
+            remove_dead_enemies,
+        )
+            .in_set(GameplayLogic),
     );
 
     app.add_observer(damage_trigger);
@@ -70,25 +75,35 @@ fn process_asteroid_collisions(
     }
 }
 
+
+fn remove_dead_enemies(enemies: Query<(Entity, &Health), Without<Player>>, mut commands: Commands) {
+    for (enemy, health) in enemies {
+        if health.0 < 0 {
+            commands.get_entity(enemy).unwrap().despawn();
+        }
+    }
+}
+
 fn process_player_dead(
-    player: Option<
-        Single<(Entity, &Health, &mut Sprite, &mut Transform), (With<Player>, Without<Dead>)>,
-    >,
+    player: Option<Single<(Entity, &Health, &Transform), (With<Player>, Without<Dead>)>>,
     assets: Res<PlayerAssets>,
     mut commands: Commands,
 ) {
     let Some(player) = player else {
         return;
     };
-    let (ent, health, mut sprite, mut transform) = player.into_inner();
+    let (ent, health, transform) = player.into_inner();
 
     if health.0 <= 0 {
-        sprite.image = assets.exploded.clone();
-        sprite.custom_size = Some(Vec2::new(100.0, 100.0));
         let mut player = commands.get_entity(ent).unwrap();
-        player.insert(Dead);
+        player.remove::<Sprite>();
         player.remove::<RigidBody>();
-        transform.rotation = default();
+        player.insert(Dead);
+        player.despawn_related::<Children>();
+        commands.spawn((
+            Transform::from_xyz(transform.translation.x, transform.translation.y, 0.0),
+            assets.get_explosion(),
+        ));
 
         commands.spawn(crate::audio::sound_effect(assets.crash_sfx.clone()));
     }
