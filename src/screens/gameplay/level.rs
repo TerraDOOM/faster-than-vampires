@@ -125,17 +125,6 @@ pub fn spawn_level(
     ));
 
     commands.spawn((
-        Name::new("ObjectiveMarker"),
-        Transform::from_xyz(0.0, 0.0, -1.0),
-        ObjectiveMarker,
-        Sprite {
-            color: Color::linear_rgba(1.0, 0.0, 0.0, 0.9),
-            custom_size: Some(Vec2 { x: 32.0, y: 32.0 }),
-            ..default()
-        },
-    ));
-
-    commands.spawn((
         Name::new("Level"),
         Transform::from_xyz(0.0, 0.0, 0.0),
         Visibility::default(),
@@ -218,23 +207,47 @@ pub fn gen_planet(
         },
         Transform::from_xyz(position.x, position.y, -0.5),
         if !first_planet {
-            children![(
-                ShopMarker,
-                Sprite {
-                    image: ui_assets.exclamation.clone(),
-                    custom_size: Some(Vec2 { x: 128.0, y: 128.0 }),
-                    ..default()
-                },
-            )]
+            children![
+                (
+                    ShopMarker,
+                    Sprite {
+                        image: ui_assets.exclamation.clone(),
+                        custom_size: Some(Vec2 { x: 128.0, y: 128.0 }),
+                        ..default()
+                    },
+                ),
+                (
+                    Name::new("ObjectiveMarker_Fake"),
+                    Transform::from_xyz(0.0, 0.0, -0.3),
+                    ObjectiveMarker,
+                    Sprite {
+                        color: Color::linear_rgba(1.0, 0.0, 0.0, 0.0),
+                        custom_size: Some(Vec2 { x: 32.0, y: 32.0 }),
+                        ..default()
+                    },
+                )
+            ]
         } else {
-            children![(
-                ShopMarker,
-                Sprite {
-                    color: Color::linear_rgba(1.0, 0.0, 0.0, 0.0),
-                    custom_size: Some(Vec2 { x: 32.0, y: 32.0 }),
-                    ..default()
-                },
-            )]
+            children![
+                (
+                    ShopMarker,
+                    Sprite {
+                        color: Color::linear_rgba(1.0, 0.0, 0.0, 0.0),
+                        custom_size: Some(Vec2 { x: 32.0, y: 32.0 }),
+                        ..default()
+                    },
+                ),
+                (
+                    Name::new("ObjectiveMarker"),
+                    Transform::from_xyz(0.0, 0.0, -0.3),
+                    ObjectiveMarker,
+                    Sprite {
+                        color: Color::linear_rgba(1.0, 0.0, 0.0, 0.9),
+                        custom_size: Some(Vec2 { x: 32.0, y: 32.0 }),
+                        ..default()
+                    },
+                )
+            ]
         },
     )
 }

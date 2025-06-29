@@ -20,7 +20,7 @@ use std::f32::consts::PI;
 use crate::{screens::Screen, AppSystems, PausableSystems};
 
 use super::{
-    level::{BackgroundAccess, Planet},
+    level::{BackgroundAccess, ObjectiveMarker, Planet},
     player::Player,
 };
 
@@ -106,49 +106,18 @@ fn apply_screen_wrap(
 }
 
 fn update_camera(
-    mut camera: Option<
-        Single<
-            &mut Transform,
-            (
-                With<Camera2d>,
-                Without<BackgroundAccess>,
-                Without<Player>,
-                Without<Planet>,
-            ),
-        >,
-    >,
-    player: Option<
-        Single<
-            &Transform,
-            (
-                With<Player>,
-                Without<BackgroundAccess>,
-                Without<Camera2d>,
-                Without<Planet>,
-            ),
-        >,
-    >,
-    background: Option<
-        Single<
-            &mut Transform,
-            (
-                With<BackgroundAccess>,
-                Without<Camera2d>,
-                Without<Player>,
-                Without<Planet>,
-            ),
-        >,
-    >,
-    planets: Query<
-        (&mut Transform, &Planet, &Children),
-        (
-            Without<Camera2d>,
-            Without<Player>,
-            Without<BackgroundAccess>,
-        ),
-    >,
+    mut set: ParamSet<(
+        Query<&mut Transform, With<Camera2d>>,
+        Query<&Transform, With<Player>>,
+        Query<&mut Transform, With<BackgroundAccess>>,
+        Query<(&mut Transform, &Planet, &Children)>,
+    )>,
     time: Res<Time>,
 ) {
+    for mut planets in set.p4().iter_mut() {
+        // Do your fancy stuff here...
+    }
+
     let Some(mut camera) = camera else {
         return;
     };
@@ -161,7 +130,24 @@ fn update_camera(
         return;
     };
 
-    let Vec3 { x, y, .. } = player.translation;
+    let Some(mut quest_marker) = quest_marker else {
+        return;
+    };
+
+    let Vec3 { x, y, .. } = {
+        let Ok(player) = set.p1().single_inner() else {
+            return;
+        };
+        player.translation
+    };
+
+    {
+        let Ok(camera) = set.p0.single_inner() else {
+            return;
+        }
+        let direction = Vec3::new(x, y, camera.translation.z);
+    }
+
     let direction = Vec3::new(x, y, camera.translation.z);
 
     // Applies a smooth effect to camera movement using stable interpolation
@@ -174,4 +160,11 @@ fn update_camera(
     for (mut transform, init_position, children) in planets {
         transform.translation = Vec3::new(init_position.x, init_position.y, -0.5) + direction * 0.9;
     }
+
+    //Shows the next plaent to shop @
+    let target = Vec3::new(128.0, 128.0, 0.0);
+    let quest_angle = dbg![(direction * 0.9).angle_between(target)] * 3.14;
+
+    let quest_position = Vec3::new(quest_angle.cos(), quest_angle.sin(), 0.0) * 256.0;
+    quest_marker.translation = direction + quest_position;
 }
