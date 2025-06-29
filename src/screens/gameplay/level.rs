@@ -140,9 +140,6 @@ pub fn spawn_level(
         ],
     ));
     commands.spawn(gen_ui(&ui_assets));
-
-    generate_buy_menu(commands, &ui_assets);
-    //commands.spawn(gen_shop(&ui_assets));
 }
 
 #[repr(usize)]
