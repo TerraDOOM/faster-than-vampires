@@ -9,7 +9,6 @@ pub(super) fn plugin(app: &mut App) {
         Update,
         update_animations
             .in_set(PausableSystems)
-            .in_set(AppSystems::TickTimers)
             .in_set(AppSystems::Update),
     );
 }
