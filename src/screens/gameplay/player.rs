@@ -59,7 +59,6 @@ pub fn gen_player(
         ExternalImpulse::default(),
         AngularDamping(0.8),
         LinearDamping(0.8),
-        ScreenWrap,
     )
 }
 

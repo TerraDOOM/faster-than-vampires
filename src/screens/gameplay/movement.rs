@@ -17,15 +17,17 @@ use avian2d::prelude::*;
 use bevy::{prelude::*, window::PrimaryWindow};
 use std::f32::consts::PI;
 
-use crate::{AppSystems, PausableSystems};
+use crate::{screens::Screen, AppSystems, PausableSystems};
 
-use super::player::Player;
+use super::{level::BackgroundAccess, player::Player};
+
+//use super::player::Player;
 
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<MovementController>();
     app.register_type::<ScreenWrap>();
 
-    //    app.add_systems(Update, update_camera);
+    app.add_systems(Update, update_camera.run_if(in_state(Screen::Gameplay)));
 
     app.add_systems(
         FixedUpdate,
@@ -103,23 +105,35 @@ fn apply_screen_wrap(
     }
 }
 
-// fn update_camera(
-//     mut camera: Single<&mut Transform, With<Camera2d>>,
-//     player: Single<&Transform, With<Player>>,
-//     time: Res<Time>,
-// ) {
-//     //let mut camera = Some(camera) else {
-//     //     return;
-//     // };
+fn update_camera(
+    mut camera: Option<
+        Single<&mut Transform, (With<Camera2d>, Without<BackgroundAccess>, Without<Player>)>,
+    >,
+    player: Option<
+        Single<&Transform, (With<Player>, Without<BackgroundAccess>, Without<Camera2d>)>,
+    >,
+    background: Option<
+        Single<&mut Transform, (With<BackgroundAccess>, Without<Camera2d>, Without<Player>)>,
+    >,
+    time: Res<Time>,
+) {
+    let Some(mut camera) = camera else {
+        return;
+    };
 
-//     // let player = player else {
-//     //     return;
-//     // };
+    let Some(player) = player else {
+        return;
+    };
 
-//     let Vec3 { x, y, .. } = player.translation;
-//     let direction = Vec3::new(x, y, camera.translation.z);
+    let Some(mut background) = background else {
+        return;
+    };
 
-//     // Applies a smooth effect to camera movement using stable interpolation
-//     // between the camera position and the player position on the x and y axes.
-//     camera.translation = direction;
-//}
+    let Vec3 { x, y, .. } = player.translation;
+    let direction = Vec3::new(x, y, camera.translation.z);
+
+    // Applies a smooth effect to camera movement using stable interpolation
+    // between the camera position and the player position on the x and y axes.
+    camera.translation = direction;
+    background.translation = camera.translation - Vec3::new(0.0, 0.0, 5.0);
+}
