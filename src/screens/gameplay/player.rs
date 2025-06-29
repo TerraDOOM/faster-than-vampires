@@ -72,8 +72,8 @@ fn player_physics_params() -> impl Bundle {
         ExternalTorque::default().with_persistence(false),
         ExternalImpulse::default(),
         AngularDamping(5.0),
-        LinearDamping(2.0),
-        MaxLinearSpeed(100.0),
+        LinearDamping(1.2),
+        MaxLinearSpeed(1000.0),
         MaxAngularSpeed(PI),
         CollisionEventsEnabled,
     )

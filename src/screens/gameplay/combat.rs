@@ -6,15 +6,16 @@ use crate::{screens::Screen, PausableSystems};
 use super::{
     enemies::AsteroidAI,
     player::{Player, PlayerAssets},
+    GameplayLogic,
 };
 
 pub(super) fn plugin(app: &mut App) {
     app.add_systems(
         Update,
-        (process_asteroid_collisions, process_player_dead)
-            .in_set(PausableSystems)
-            .run_if(in_state(Screen::Gameplay)),
+        (process_asteroid_collisions, process_player_dead).in_set(GameplayLogic),
     );
+
+    app.add_observer(damage_trigger);
 }
 
 #[derive(Event)]
@@ -31,6 +32,14 @@ pub struct HasWeapon;
 
 #[derive(Component)]
 pub struct NormalGun {}
+
+fn damage_trigger(trigger: Trigger<Damage>, mut killable: Query<&mut Health>) {
+    let Ok(mut target) = killable.get_mut(trigger.target()) else {
+        return;
+    };
+
+    target.0 -= trigger.0;
+}
 
 fn process_asteroid_collisions(
     mut commands: Commands,
@@ -61,18 +70,25 @@ fn process_asteroid_collisions(
 }
 
 fn process_player_dead(
-    player: Option<Single<(Entity, &Health, &mut Sprite), (With<Player>, Without<Dead>)>>,
+    player: Option<
+        Single<(Entity, &Health, &mut Sprite, &mut Transform), (With<Player>, Without<Dead>)>,
+    >,
     assets: Res<PlayerAssets>,
     mut commands: Commands,
 ) {
     let Some(player) = player else {
         return;
     };
-    let (ent, health, mut sprite) = player.into_inner();
+    let (ent, health, mut sprite, mut transform) = player.into_inner();
 
     if health.0 <= 0 {
         sprite.image = assets.exploded.clone();
-        commands.get_entity(ent).unwrap().insert(Dead);
+        sprite.custom_size = Some(Vec2::new(100.0, 100.0));
+        let mut player = commands.get_entity(ent).unwrap();
+        player.insert(Dead);
+        player.remove::<RigidBody>();
+        transform.rotation = default();
+
         commands.spawn(crate::audio::sound_effect(assets.crash_sfx.clone()));
     }
 }

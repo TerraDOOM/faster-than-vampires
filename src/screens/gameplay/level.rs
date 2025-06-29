@@ -6,7 +6,6 @@ use bevy::{color::palettes::css::GREEN, prelude::*};
 
 use crate::{
     asset_tracking::LoadResource,
-    audio::music,
     screens::{
         gameplay::{
             enemies::{gen_asteroid, gen_flagship, EntityAssets},
@@ -115,6 +114,7 @@ pub fn spawn_level(
         Visibility::default(),
         StateScoped(Screen::Gameplay),
         children![
+            gen_player(400.0, &player_assets),
             gen_planet(
                 &level_assets,
                 &ui_assets,
