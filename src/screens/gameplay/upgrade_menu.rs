@@ -1,5 +1,6 @@
 use bevy::{input::common_conditions::input_just_pressed, prelude::*};
-use std::collections::HashMap;
+use rand::seq::IndexedRandom;
+use std::collections::{HashMap, HashSet};
 
 use crate::menus::Menu;
 
@@ -47,6 +48,13 @@ pub enum UpgradeTypes {
     Thrusters,
 }
 
+impl UpgradeTypes {
+    pub fn all_upgrades() -> Vec<Self> {
+        use UpgradeTypes::*;
+        vec![Cannon, Missile, Laser, Electricity, Health, Thrusters]
+    }
+}
+
 #[derive(Component)]
 pub struct Upgrades {
     pub gotten_upgrades: HashMap<UpgradeTypes, usize>,
@@ -80,11 +88,35 @@ pub fn draft_upgrades(
     gotten_upgrades: &HashMap<UpgradeTypes, usize>,
     planet: PlanetType,
 ) -> (UpgradeTypes, UpgradeTypes, UpgradeTypes) {
-    (
-        UpgradeTypes::Cannon,
-        UpgradeTypes::Electricity,
-        UpgradeTypes::Thrusters,
-    )
+    //use rand::seq::IndexedRandom;
+
+    let mut rng = rand::rng();
+
+    let owned_upgrades = gotten_upgrades
+        .keys()
+        .cloned()
+        .collect::<Vec<UpgradeTypes>>();
+
+    let all_upgrades: HashSet<_> = UpgradeTypes::all_upgrades().into_iter().collect();
+    let non_owned: Vec<UpgradeTypes> = all_upgrades
+        .difference(&HashSet::from_iter(owned_upgrades.iter().cloned()))
+        .cloned()
+        .collect();
+
+    let mut non_owned = non_owned.into_iter().collect::<Vec<UpgradeTypes>>();
+
+    let upgrade1 = owned_upgrades.choose(&mut rng).unwrap();
+    let upgrade2 = non_owned
+        .choose(&mut rng)
+        .cloned()
+        .unwrap_or_else(|| *UpgradeTypes::all_upgrades().choose(&mut rng).unwrap());
+    non_owned.retain(|x| x != &upgrade2);
+    let upgrade3 = non_owned
+        .choose(&mut rng)
+        .cloned()
+        .unwrap_or_else(|| *UpgradeTypes::all_upgrades().choose(&mut rng).unwrap());
+
+    (*upgrade1, upgrade2, upgrade3)
 }
 
 pub fn generate_buy_menu(
