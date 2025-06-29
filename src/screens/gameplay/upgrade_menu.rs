@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use crate::menus::Menu;
 
 use super::{
+    combat::weapons::WeaponAssets,
     level::{PlanetType, UIAssets},
     player::Player,
     GameplayLogic,
@@ -53,6 +54,7 @@ pub struct Upgrades {
 
 pub fn update_upgrades(
     mut commands: Commands,
+    weapon_assets: Res<WeaponAssets>,
     upgrades: Single<(Entity, &Upgrades), (With<Player>, Changed<Upgrades>)>,
 ) {
     let (ent, upgrades) = upgrades.into_inner();
@@ -60,6 +62,7 @@ pub fn update_upgrades(
     player.despawn_related::<Children>();
 
     let cannons = super::combat::weapons::spawn_cannons(
+        &weapon_assets.cannon,
         upgrades
             .gotten_upgrades
             .get(&UpgradeTypes::Cannon)
