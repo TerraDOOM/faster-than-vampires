@@ -1,14 +1,16 @@
 //! Spawn the main level.
 
+use avian2d::prelude::{Collider, RigidBody, Sensor};
 use rand::Rng;
 
 use bevy::{color::palettes::css::GREEN, prelude::*};
 
 use crate::{
     asset_tracking::LoadResource,
+    menus::Menu,
     screens::{
         gameplay::{
-            enemies::{gen_asteroid, gen_flagship, EntityAssets},
+            enemies::{gen_asteroid, gen_flagship, gen_goon, EntityAssets},
             upgrade_menu::generate_buy_menu,
         },
         Screen,
@@ -16,6 +18,7 @@ use crate::{
 };
 
 use super::{
+    enemies::ShipType,
     player::{gen_player, Player, PlayerAssets},
     GameplayLogic,
 };
@@ -30,6 +33,11 @@ pub(super) fn plugin(app: &mut App) {
     app.add_systems(Update, world_update.in_set(GameplayLogic));
 }
 
+const LVL1X: f32 = 0.0;
+const LVL2X: f32 = 10000.0;
+const LVL3X: f32 = 20000.0;
+const LVL4X: f32 = 30000.0;
+
 #[derive(Resource, Asset, Clone, Reflect)]
 #[reflect(Resource)]
 pub struct LevelAssets {
@@ -43,6 +51,10 @@ pub struct LevelAssets {
     planet2: Handle<Image>,
     #[dependency]
     planet3: Handle<Image>,
+    #[dependency]
+    planet4: Handle<Image>,
+    #[dependency]
+    planet5: Handle<Image>,
 }
 
 #[derive(Resource, Asset, Clone, Reflect)]
@@ -81,6 +93,8 @@ impl FromWorld for LevelAssets {
             planet1: assets.load_with_settings("images/level/Planet1.png", make_nearest),
             planet2: assets.load_with_settings("images/level/Planet2.png", make_nearest),
             planet3: assets.load_with_settings("images/level/planet3.png", make_nearest),
+            planet4: assets.load_with_settings("images/level/Planet4.png", make_nearest),
+            planet5: assets.load_with_settings("images/level/Planet5.png", make_nearest),
         }
     }
 }
@@ -124,21 +138,35 @@ pub fn spawn_level(
             gen_planet(
                 &level_assets,
                 &ui_assets,
-                Vec2::new(128.0, 128.0),
+                Vec2::new(LVL1X * 0.1, 128.0),
                 PlanetType::EarthPlanet,
                 true
             ),
             gen_planet(
                 &level_assets,
                 &ui_assets,
-                Vec2::new(2000.0, 0.0),
+                Vec2::new(LVL2X * 0.1, 0.0),
                 PlanetType::LavaPlanet,
                 false
             ),
             gen_planet(
                 &level_assets,
                 &ui_assets,
-                Vec2::new(3000.0, 0.0),
+                Vec2::new(LVL3X * 0.1, -300.0),
+                PlanetType::WaterPlanet,
+                false
+            ),
+            gen_planet(
+                &level_assets,
+                &ui_assets,
+                Vec2::new(LVL3X * 0.1, 300.0),
+                PlanetType::DesertPlanet,
+                false
+            ),
+            gen_planet(
+                &level_assets,
+                &ui_assets,
+                Vec2::new(LVL4X * 0.1, 300.0),
                 PlanetType::GreenPlanet,
                 false
             ),
@@ -154,6 +182,8 @@ pub enum PlanetType {
     GreenPlanet,
     LavaPlanet,
     EarthPlanet,
+    WaterPlanet,
+    DesertPlanet,
 }
 
 #[derive(Component)]
@@ -184,10 +214,14 @@ pub fn gen_planet(
                 PlanetType::GreenPlanet => assets.planet3.clone(),
                 PlanetType::LavaPlanet => assets.planet2.clone(),
                 PlanetType::EarthPlanet => assets.planet1.clone(),
+                PlanetType::WaterPlanet => assets.planet4.clone(),
+                PlanetType::DesertPlanet => assets.planet5.clone(),
             },
             custom_size: Some(Vec2 { x: 512.0, y: 512.0 }),
             ..default()
         },
+        //RigidBody::Static,
+        //Collider::circle(256.0),
         Transform::from_xyz(position.x, position.y, -0.5),
         if !first_planet {
             children![
@@ -234,6 +268,7 @@ pub fn gen_planet(
         },
     )
 }
+
 #[derive(Component, Debug, Clone, Copy, PartialEq, Eq, Default, Reflect)]
 #[reflect(Component)]
 pub struct UIBox;
@@ -287,32 +322,86 @@ pub fn world_update(
     mut gizmo: Gizmos,
     player: Single<&Transform, With<Player>>,
     mut ui_position: Single<&mut Text, With<UIPosition>>,
+    planets: Query<(&Transform, &mut Planet)>, //For shop checking
+    mut next_menu: ResMut<NextState<Menu>>,
 ) {
-    let mut rng = rand::thread_rng();
-
     gizmo.rect_2d(Isometry2d::IDENTITY, Vec2::new(100.0, 100.0), GREEN);
 
     ui_position.0 = ((player.translation.x) as i32).to_string();
 
-    if 0 == rng.gen_range(0..30) {
+    for (planet_transform, mut planet) in planets {
+        if !planet.has_shopped
+            && (player.translation - planet_transform.translation).length() < 200.0
+        {
+            planet.has_shopped = true;
+            next_menu.set(Menu::Buy);
+        }
+    }
+
+    //Enemy spawning depending on biome
+
+    if player.translation.x < LVL2X {
+        spawn_enemy(
+            commands,
+            entity_assets,
+            10,
+            ShipType::EmpireGoon,
+            player.translation,
+        );
+    } else if player.translation.x < LVL3X {
+        spawn_enemy(
+            commands,
+            entity_assets,
+            5,
+            ShipType::Asteroid,
+            player.translation,
+        );
+    }
+}
+
+pub fn spawn_enemy(
+    mut commands: Commands,
+    entity_assets: Res<EntityAssets>,
+    spawnrate: usize,
+    ship_type: ShipType,
+    player_pos: Vec3,
+) {
+    let mut rng = rand::thread_rng();
+    if 0 == rng.gen_range(0..spawnrate) {
         let rand_angle = (rng.gen_range(0..360) as f32 / 180.0 * 3.14) as f32;
         let relative_postion = Vec2::new(rand_angle.sin(), rand_angle.cos()) * 900.0;
-        let position = Vec2::new(player.translation.x, player.translation.y) + relative_postion;
+        let position = Vec2::new(player_pos.x, player_pos.y) + relative_postion;
 
         let rand_deviation =
             Vec2::new(rng.gen_range(-10..10) as f32, rng.gen_range(-10..10) as f32) / 20.0;
         let rand_speed = (rng.gen_range(100..300) as f32) / 1500.0;
 
-        commands.spawn((
-            Name::new("Goon"),
-            Transform::default(),
-            Visibility::default(),
-            StateScoped(Screen::Gameplay),
-            children![gen_asteroid(
-                &entity_assets,
-                position,
-                -(relative_postion + rand_deviation) * rand_speed
-            )],
-        ));
+        match ship_type {
+            ShipType::Asteroid => commands.spawn((
+                Name::new("Asteroid"),
+                Transform::default(),
+                Visibility::default(),
+                StateScoped(Screen::Gameplay),
+                children![gen_asteroid(
+                    &entity_assets,
+                    position,
+                    -(relative_postion + rand_deviation) * rand_speed
+                )],
+            )),
+            ShipType::EmpireGoon => commands.spawn((
+                Name::new("Goon"),
+                Transform::default(),
+                Visibility::default(),
+                StateScoped(Screen::Gameplay),
+                children![gen_goon(&entity_assets, position,)],
+            )),
+            _ => commands.spawn((
+                Name::new("???"),
+                Transform::default(),
+                Visibility::default(),
+                StateScoped(Screen::Gameplay),
+                children![gen_goon(&entity_assets, position,)],
+            )),
+        };
     }
 }
