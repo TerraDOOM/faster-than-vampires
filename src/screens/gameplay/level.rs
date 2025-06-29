@@ -35,12 +35,13 @@ pub(super) fn plugin(app: &mut App) {
 }
 
 const LVL1X: f32 = 0.0;
-const LVL2X: f32 = 20000.0;
+const LVL2X: f32 = 21000.0;
 const LVL3X: f32 = 35000.0;
 const LVL4X: f32 = 50000.0;
 const LVL5X: f32 = 65000.0;
 const LVL6X: f32 = 80000.0;
 const LVL7X: f32 = 100000.0;
+const YMAX: f32 = 15000.0;
 
 #[derive(Resource, Asset, Clone, Reflect)]
 #[reflect(Resource)]
@@ -152,14 +153,14 @@ pub fn spawn_level(
             gen_planet(
                 &level_assets,
                 &ui_assets,
-                Vec2::new(LVL2X * 0.1, 500.0),
+                Vec2::new(LVL2X * 0.1, YMAX / 25.0),
                 PlanetType::GreenPlanet,
                 false
             ),
             gen_planet(
                 &level_assets,
                 &ui_assets,
-                Vec2::new(LVL2X * 0.1, -500.0),
+                Vec2::new(LVL2X * 0.1, -YMAX / 25.0),
                 PlanetType::LavaPlanet,
                 false
             ),
@@ -173,14 +174,14 @@ pub fn spawn_level(
             gen_planet(
                 &level_assets,
                 &ui_assets,
-                Vec2::new(LVL4X * 0.1, 500.0),
+                Vec2::new(LVL4X * 0.1, YMAX / 2.0),
                 PlanetType::WaterPlanet,
                 false
             ),
             gen_planet(
                 &level_assets,
                 &ui_assets,
-                Vec2::new(LVL4X * 0.1, -500.0),
+                Vec2::new(LVL4X * 0.1, -YMAX / 2.0),
                 PlanetType::DesertPlanet,
                 false
             ),
@@ -194,14 +195,14 @@ pub fn spawn_level(
             gen_planet(
                 &level_assets,
                 &ui_assets,
-                Vec2::new(LVL6X * 0.1, 500.0),
+                Vec2::new(LVL6X * 0.1, YMAX / 2.0),
                 PlanetType::DesertPlanet,
                 false
             ),
             gen_planet(
                 &level_assets,
                 &ui_assets,
-                Vec2::new(LVL6X * 0.1, -500.0),
+                Vec2::new(LVL6X * 0.1, -YMAX / 2.0),
                 PlanetType::DesertPlanet,
                 false
             ),
@@ -525,19 +526,38 @@ pub fn world_update(
     //Mini-map
     mini_map_enemy.width = Val::Percent(flagship.translation.x / LVL7X * 100.0);
     mini_map_pos.left = Val::Percent(player.translation.x / LVL7X * 100.0);
-    mini_map_pos.top = Val::Percent(45.0 - player.translation.y / 10000.0 * 100.0);
+    mini_map_pos.top = Val::Percent(45.0 - player.translation.y / YMAX * 100.0);
 
     //mini_map[0].Node.width = Val::Percent(10.0);
 
     //Enemy spawning depending on biome
 
-    if player.translation.x < LVL2X {
+    if player.translation.y > YMAX {
+        spawn_enemy(
+            commands,
+            entity_assets,
+            5,
+            ShipType::Asteroid,
+            player.translation,
+            SpawnPatterns::Top,
+        );
+    } else if player.translation.y < -YMAX {
+        spawn_enemy(
+            commands,
+            entity_assets,
+            5,
+            ShipType::Asteroid,
+            player.translation,
+            SpawnPatterns::Top,
+        );
+    } else if player.translation.x < LVL2X {
         spawn_enemy(
             commands,
             entity_assets,
             10,
             ShipType::Rammer,
             player.translation,
+            SpawnPatterns::Circle,
         );
     } else if player.translation.x < LVL3X {
         spawn_enemy(
@@ -546,8 +566,17 @@ pub fn world_update(
             5,
             ShipType::Asteroid,
             player.translation,
+            SpawnPatterns::Circle,
         );
     }
+}
+
+#[repr(usize)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+pub enum SpawnPatterns {
+    Circle,
+    Top,
+    Bot,
 }
 
 pub fn spawn_enemy(
@@ -556,10 +585,17 @@ pub fn spawn_enemy(
     spawnrate: usize,
     ship_type: ShipType,
     player_pos: Vec3,
+    spawn_patter: SpawnPatterns,
 ) {
     let mut rng = rand::thread_rng();
     if 0 == rng.gen_range(0..spawnrate) {
-        let rand_angle = (rng.gen_range(0..360) as f32 / 180.0 * 3.14) as f32;
+        let rand_angle = match spawn_patter {
+            SpawnPatterns::Circle => (rng.gen_range(0..360) as f32 / 180.0 * 3.14) as f32,
+            SpawnPatterns::Bot => (rng.gen_range(135..225) as f32 / 180.0 * 3.14) as f32,
+            SpawnPatterns::Top => (rng.gen_range(135..225) as f32 / 180.0 * 3.14 + 135.0) as f32,
+            _ => (rng.gen_range(45..135) as f32 / 180.0 * 3.14) as f32,
+        };
+
         let relative_postion = Vec2::new(rand_angle.sin(), rand_angle.cos()) * 900.0;
         let position = Vec2::new(player_pos.x, player_pos.y) + relative_postion;
 
