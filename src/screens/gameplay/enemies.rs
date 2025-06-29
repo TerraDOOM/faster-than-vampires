@@ -68,6 +68,28 @@ pub fn gen_goon(assets: &EntityAssets) -> impl Bundle {
 }
 
 #[derive(Component, Debug)]
+pub struct EntityFlagship;
+pub fn gen_flagship(assets: &EntityAssets) -> impl Bundle {
+    let ship = Ship {
+        shiptype: ShipType::Flagship,
+        position: Vec2::new(-700.0, 0.0),
+        lifetime: Instant::now(),
+        weapons: Vec::new(),
+    };
+
+    (
+        Enemy,
+        EntityFlagship,
+        Sprite {
+            image: assets.flagship.clone(),
+            custom_size: Some(Vec2 { x: 512.0, y: 512.0 }),
+            ..default()
+        },
+        Transform::from_xyz(ship.position.x, ship.position.y, 0.0),
+    )
+}
+
+#[derive(Component, Debug)]
 pub struct EntityAsteroid {
     health: u32,
 }
@@ -111,7 +133,7 @@ impl FromWorld for EntityAssets {
         use crate::util::make_nearest;
         let assets = world.resource::<AssetServer>();
         Self {
-            flagship: assets.load_with_settings("images/mascot.png", make_nearest),
+            flagship: assets.load_with_settings("images/entities/Flagship.png", make_nearest),
             empire_goon: assets.load_with_settings("images/mascot.png", make_nearest),
             pirate_ship: assets.load_with_settings("images/mascot.png", make_nearest),
             outpost: assets.load_with_settings("images/mascot.png", make_nearest),

@@ -19,7 +19,10 @@ use std::f32::consts::PI;
 
 use crate::{screens::Screen, AppSystems, PausableSystems};
 
-use super::{level::BackgroundAccess, player::Player};
+use super::{
+    level::{BackgroundAccess, Planet},
+    player::Player,
+};
 
 //use super::player::Player;
 
@@ -104,13 +107,45 @@ fn apply_screen_wrap(
 
 fn update_camera(
     mut camera: Option<
-        Single<&mut Transform, (With<Camera2d>, Without<BackgroundAccess>, Without<Player>)>,
+        Single<
+            &mut Transform,
+            (
+                With<Camera2d>,
+                Without<BackgroundAccess>,
+                Without<Player>,
+                Without<Planet>,
+            ),
+        >,
     >,
     player: Option<
-        Single<&Transform, (With<Player>, Without<BackgroundAccess>, Without<Camera2d>)>,
+        Single<
+            &Transform,
+            (
+                With<Player>,
+                Without<BackgroundAccess>,
+                Without<Camera2d>,
+                Without<Planet>,
+            ),
+        >,
     >,
     background: Option<
-        Single<&mut Transform, (With<BackgroundAccess>, Without<Camera2d>, Without<Player>)>,
+        Single<
+            &mut Transform,
+            (
+                With<BackgroundAccess>,
+                Without<Camera2d>,
+                Without<Player>,
+                Without<Planet>,
+            ),
+        >,
+    >,
+    planets: Query<
+        (&mut Transform, &Planet),
+        (
+            Without<Camera2d>,
+            Without<Player>,
+            Without<BackgroundAccess>,
+        ),
     >,
     time: Res<Time>,
 ) {
@@ -132,5 +167,12 @@ fn update_camera(
     // Applies a smooth effect to camera movement using stable interpolation
     // between the camera position and the player position on the x and y axes.
     camera.translation = direction;
-    background.translation = camera.translation - Vec3::new(0.0, 0.0, 5.0);
+
+    background.translation = camera.translation * 0.95 - Vec3::new(0.0, 0.0, 5.0);
+
+    //Planet paralaxing
+    for (mut transform, init_position) in planets {
+        transform.translation =
+            Vec3::new(init_position.x, init_position.y, -0.5) + direction * 0.25;
+    }
 }

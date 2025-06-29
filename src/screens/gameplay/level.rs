@@ -6,6 +6,7 @@ use rand::Rng;
 
 use bevy::{
     color::{self, palettes::css::GREEN},
+    ecs::query::QueryData,
     gizmos,
     image::{ImageLoaderSettings, ImageSampler, ImageSamplerDescriptor},
     prelude::*,
@@ -16,7 +17,7 @@ use crate::{
     audio::music,
     screens::{
         gameplay::{
-            enemies::{gen_asteroid, gen_enemy, EntityAssets, Ship, ShipType},
+            enemies::{gen_asteroid, gen_enemy, gen_flagship, EntityAssets, Ship, ShipType},
             upgrade_menu::generate_buy_menu,
         },
         Screen,
@@ -25,7 +26,6 @@ use crate::{
 };
 
 use super::{
-    combat::{Damage, Health},
     enemies::gen_goon,
     player::{gen_player, Player, PlayerAssets},
 };
@@ -43,13 +43,6 @@ pub(super) fn plugin(app: &mut App) {
             .in_set(PausableSystems)
             .run_if(in_state(Screen::Gameplay))),
     );
-
-    app.add_observer(|trigger: Trigger<Damage>, mut query: Query<&mut Health>| {
-        let Ok(mut health) = query.get_mut(trigger.target()) else {
-            return;
-        };
-        health.0 -= trigger.0;
-    });
 }
 
 #[derive(Resource, Asset, Clone, Reflect)]
@@ -114,7 +107,7 @@ pub fn spawn_level(
         Transform::from_xyz(0.0, 0.0, -1.0),
         BackgroundAccess,
         Sprite {
-            color: Color::linear_rgba(0.0, 0.0, 0.0, 0.9),
+            color: Color::linear_rgba(1.0, 0.0, 0.0, 0.9),
             custom_size: Some(Vec2 {
                 x: 1280.0,
                 y: 960.0,
@@ -136,12 +129,21 @@ pub fn spawn_level(
 
     commands.spawn((
         Name::new("Level"),
-        Transform::from_xyz(0.0, 0.0, -1.0),
+        Transform::from_xyz(0.0, 0.0, 0.0),
         Visibility::default(),
         StateScoped(Screen::Gameplay),
         children![
             gen_player(400.0, &player_assets, &mut texture_atlas_layouts),
-            gen_goon(&entity_assets),
+            (
+                Name::new("Gameplay Music"),
+                music(level_assets.music.clone())
+            ),
+            gen_planet(
+                &level_assets,
+                Vec2::new(128.0, 128.0),
+                PlanetType::LavaPlanet
+            ),
+            gen_flagship(&entity_assets),
             map_gen(&level_assets),
         ],
     ));
@@ -160,12 +162,15 @@ pub enum PlanetType {
 }
 
 #[derive(Component)]
-pub struct Planet;
+pub struct Planet {
+    pub x: f32,
+    pub y: f32,
+}
 pub fn gen_planet(assets: &LevelAssets, position: Vec2, planet_name: PlanetType) -> impl Bundle {
     println!("Planet spawned");
 
     (
-        Planet,
+        Planet { x: 0.0, y: 0.0 },
         Sprite {
             image: match planet_name {
                 PlanetType::GreenPlanet => assets.planet3.clone(),
@@ -176,7 +181,7 @@ pub fn gen_planet(assets: &LevelAssets, position: Vec2, planet_name: PlanetType)
             custom_size: Some(Vec2 { x: 128.0, y: 128.0 }),
             ..default()
         },
-        Transform::from_xyz(position.x, position.y, 0.0),
+        Transform::from_xyz(position.x, position.y, -0.5),
     )
 }
 
