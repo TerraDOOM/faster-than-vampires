@@ -60,6 +60,8 @@ pub struct LevelAssets {
     planet4: Handle<Image>,
     #[dependency]
     planet5: Handle<Image>,
+    #[dependency]
+    planet6: Handle<Image>,
 }
 
 #[derive(Resource, Asset, Clone, Reflect)]
@@ -103,6 +105,7 @@ impl FromWorld for LevelAssets {
             planet3: assets.load_with_settings("images/level/planet3.png", make_nearest),
             planet4: assets.load_with_settings("images/level/Planet4.png", make_nearest),
             planet5: assets.load_with_settings("images/level/Planet5.png", make_nearest),
+            planet6: assets.load_with_settings("images/level/Planet5.png", make_nearest),
         }
     }
 }
@@ -532,7 +535,7 @@ pub fn world_update(
 
     //Enemy spawning depending on biome
 
-    if player.translation.y > YMAX {
+    if player.translation.y > YMAX / 2.0 {
         spawn_enemy(
             commands,
             entity_assets,
@@ -541,7 +544,7 @@ pub fn world_update(
             player.translation,
             SpawnPatterns::Top,
         );
-    } else if player.translation.y < -YMAX {
+    } else if player.translation.y < -YMAX / 2.0 {
         spawn_enemy(
             commands,
             entity_assets,
