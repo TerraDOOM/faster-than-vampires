@@ -35,12 +35,12 @@ pub(super) fn plugin(app: &mut App) {
 }
 
 const LVL1X: f32 = 0.0;
-const LVL2X: f32 = 10000.0;
-const LVL3X: f32 = 20000.0;
-const LVL4X: f32 = 30000.0;
-const LVL5X: f32 = 40000.0;
-const LVL6X: f32 = 50000.0;
-const LVL7X: f32 = 60000.0;
+const LVL2X: f32 = 20000.0;
+const LVL3X: f32 = 35000.0;
+const LVL4X: f32 = 50000.0;
+const LVL5X: f32 = 65000.0;
+const LVL6X: f32 = 80000.0;
+const LVL7X: f32 = 100000.0;
 
 #[derive(Resource, Asset, Clone, Reflect)]
 #[reflect(Resource)]
@@ -72,6 +72,8 @@ pub struct UIAssets {
     pub button1: Handle<Image>,
     #[dependency]
     pub button2: Handle<Image>,
+    #[dependency]
+    pub mini_map: Handle<Image>,
 }
 
 impl FromWorld for UIAssets {
@@ -83,6 +85,7 @@ impl FromWorld for UIAssets {
             exclamation: assets.load_with_settings("images/entities/Point.png", make_nearest),
             button1: assets.load_with_settings("images/ui/Main_button_clicked.png", make_nearest),
             button2: assets.load_with_settings("images/ui/Main_button_unclicked.png", make_nearest),
+            mini_map: assets.load_with_settings("images/level/Map.png", make_nearest),
         }
     }
 }
@@ -149,29 +152,64 @@ pub fn spawn_level(
             gen_planet(
                 &level_assets,
                 &ui_assets,
-                Vec2::new(LVL2X * 0.1, 0.0),
+                Vec2::new(LVL2X * 0.1, 500.0),
+                PlanetType::GreenPlanet,
+                false
+            ),
+            gen_planet(
+                &level_assets,
+                &ui_assets,
+                Vec2::new(LVL2X * 0.1, -500.0),
                 PlanetType::LavaPlanet,
                 false
             ),
             gen_planet(
                 &level_assets,
                 &ui_assets,
-                Vec2::new(LVL3X * 0.1, -300.0),
-                PlanetType::WaterPlanet,
-                false
-            ),
-            gen_planet(
-                &level_assets,
-                &ui_assets,
-                Vec2::new(LVL3X * 0.1, 300.0),
+                Vec2::new(LVL3X * 0.1, 0.0),
                 PlanetType::DesertPlanet,
                 false
             ),
             gen_planet(
                 &level_assets,
                 &ui_assets,
-                Vec2::new(LVL4X * 0.1, 300.0),
-                PlanetType::GreenPlanet,
+                Vec2::new(LVL4X * 0.1, 500.0),
+                PlanetType::WaterPlanet,
+                false
+            ),
+            gen_planet(
+                &level_assets,
+                &ui_assets,
+                Vec2::new(LVL4X * 0.1, -500.0),
+                PlanetType::DesertPlanet,
+                false
+            ),
+            gen_planet(
+                &level_assets,
+                &ui_assets,
+                Vec2::new(LVL5X * 0.1, 0.0),
+                PlanetType::DesertPlanet,
+                false
+            ),
+            gen_planet(
+                &level_assets,
+                &ui_assets,
+                Vec2::new(LVL6X * 0.1, 500.0),
+                PlanetType::DesertPlanet,
+                false
+            ),
+            gen_planet(
+                &level_assets,
+                &ui_assets,
+                Vec2::new(LVL6X * 0.1, -500.0),
+                PlanetType::DesertPlanet,
+                false
+            ),
+            gen_planet(
+                &level_assets,
+                &ui_assets,
+                Vec2::new(LVL7X * 0.1, 0.0),
+                PlanetType::DesertPlanet,
                 false
             ),
             gen_flagship(&entity_assets),
@@ -355,6 +393,10 @@ pub fn gen_ui(ui_assets: &Res<UIAssets>) -> impl Bundle {
                     left: Val::Percent(6.0),
                     ..default()
                 },
+                ImageNode {
+                    image: ui_assets.mini_map.clone(),
+                    ..default()
+                },
                 BackgroundColor(Color::srgb(0.3, 0.2, 0.3)),
                 children![
                     (
@@ -369,11 +411,11 @@ pub fn gen_ui(ui_assets: &Res<UIAssets>) -> impl Bundle {
                     (
                         MiniMapPos,
                         Node {
-                            width: Val::Px(16.0),
-                            height: Val::Px(16.0),
+                            width: Val::Px(8.0),
+                            height: Val::Px(8.0),
                             ..default()
                         },
-                        BackgroundColor(Color::srgba(0.1, 1.0, 0.1, 0.8)),
+                        BackgroundColor(Color::srgba(0.05, 1.0, 0.05, 0.9)),
                     )
                 ]
             ),
@@ -463,7 +505,7 @@ pub fn world_update(
     ui_position.0 = ((player.translation.x) as i32).to_string();
 
     //HP bar
-    let hp_width = health.0 as f32 / 100.0 * 40.0;
+    let hp_width = (health.0 as f32 / 100.0 * 40.0).max(0.0);
     hp_bar.width = Val::Percent(hp_width);
     anti_hp_bar.width = Val::Percent(40.0 - hp_width);
 
@@ -482,7 +524,7 @@ pub fn world_update(
     //Mini-map
     mini_map_enemy.width = Val::Percent(1000.0 / LVL7X * 100.0);
     mini_map_pos.left = Val::Percent(player.translation.x / LVL7X * 100.0);
-    mini_map_pos.top = Val::Percent(45.0 - player.translation.y / LVL7X * 100.0);
+    mini_map_pos.top = Val::Percent(45.0 - player.translation.y / 10000.0 * 100.0);
 
     //mini_map[0].Node.width = Val::Percent(10.0);
 
