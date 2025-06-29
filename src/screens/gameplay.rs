@@ -26,6 +26,7 @@ pub(super) fn plugin(app: &mut App) {
         enemies::plugin,
         upgrade_menu::plugin,
         combat::plugin,
+        animation::plugin,
     ));
 
     app.add_systems(OnEnter(Screen::Gameplay), spawn_level);
@@ -63,7 +64,7 @@ pub(super) fn plugin(app: &mut App) {
             resource_exists::<level::LevelAssets>
                 .and(resource_exists::<player::PlayerAssets>)
                 .and(resource_exists::<enemies::EntityAssets>)
-                .and(any_with_component(player::Player)),
+                .and(any_with_component::<player::Player>),
         ),
     );
 

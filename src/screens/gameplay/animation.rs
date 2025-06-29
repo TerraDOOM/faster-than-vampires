@@ -54,7 +54,7 @@ pub fn update_animations(
     mut animations: Query<(Entity, &mut Sprite, &mut AnimatedSprite)>,
     time: Res<Time>,
 ) {
-    for (ent, sprite, animation) in animations {
+    for (ent, mut sprite, mut animation) in animations {
         animation.update_timer(time.delta());
         animation.frame += 1;
         if animation.animation_type == AnimationType::Once
