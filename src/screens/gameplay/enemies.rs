@@ -148,7 +148,7 @@ pub fn process_rammer_ai(
 
         let rotation_sign = -f32::copysign(1.0, right_dot_player);
 
-        angvel.apply_torque(rotation_sign * 1000.0);
+        angvel.apply_torque(rotation_sign * 1000000.0);
     }
 }
 
