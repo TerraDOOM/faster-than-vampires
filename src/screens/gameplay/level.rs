@@ -1,9 +1,9 @@
 //! Spawn the main level.
 
-use avian2d::prelude::{Collider, RigidBody, Sensor};
+use avian2d::prelude::*;
 use rand::Rng;
 
-use bevy::{color::palettes::css::GREEN, prelude::*};
+use bevy::{color::palettes::css::GREEN, ecs::entity, prelude::*};
 
 use crate::{
     asset_tracking::LoadResource,
@@ -18,8 +18,8 @@ use crate::{
 };
 
 use super::{
-    combat::Health,
-    enemies::ShipType,
+    combat::{Damage, Health},
+    enemies::{RammerAI, ShipType},
     player::{gen_player, Player, PlayerAssets},
     GameplayLogic,
 };
@@ -444,7 +444,15 @@ pub fn world_update(
             Without<MiniMapRed>,
         ),
     >,
-    planets: Query<(&Transform, &mut Planet)>, //For shop checking
+    planets: Query<
+        (&Transform, &mut Planet, Entity),
+        (
+            Without<HPBarAnti>,
+            Without<HPBar>,
+            Without<MiniMapRed>,
+            Without<MiniMapPos>,
+        ),
+    >, //For shop checking
     mut next_menu: ResMut<NextState<Menu>>,
 ) {
     gizmo.rect_2d(Isometry2d::IDENTITY, Vec2::new(100.0, 100.0), GREEN);
@@ -460,11 +468,13 @@ pub fn world_update(
     anti_hp_bar.width = Val::Percent(40.0 - hp_width);
 
     //Planet collision
-    for (planet_transform, mut planet) in planets {
+    for (planet_transform, mut planet, entity) in planets {
         if !planet.has_shopped
             && (player.translation - planet_transform.translation).length() < 200.0
         {
             planet.has_shopped = true;
+
+            commands.entity(entity).despawn_related::<Children>();
             next_menu.set(Menu::Buy);
         }
     }
@@ -483,7 +493,7 @@ pub fn world_update(
             commands,
             entity_assets,
             10,
-            ShipType::Asteroid,
+            ShipType::Rammer,
             player.translation,
         );
     } else if player.translation.x < LVL3X {
@@ -515,38 +525,53 @@ pub fn spawn_enemy(
         let rand_speed = (rng.gen_range(100..300) as f32) / 1500.0;
 
         match ship_type {
-            ShipType::Asteroid => commands.spawn((
-                Name::new("Asteroid"),
-                Transform::default(),
-                Visibility::default(),
-                StateScoped(Screen::Gameplay),
-                children![gen_asteroid(
-                    &entity_assets,
-                    position,
-                    -(relative_postion + rand_deviation) * rand_speed
-                )],
-            )),
-            ShipType::EmpireGoon => commands.spawn((
-                Name::new("Goon"),
-                Transform::default(),
-                Visibility::default(),
-                StateScoped(Screen::Gameplay),
-                children![gen_goon(&entity_assets, position,)],
-            )),
-            ShipType::Rammer => commands.spawn((
-                Name::new("Rammer"),
-                Transform::default(),
-                Visibility::default(),
-                StateScoped(Screen::Gameplay),
-                children![gen_rammer(&entity_assets, position, Vec2::ZERO)],
-            )),
-            _ => commands.spawn((
-                Name::new("???"),
-                Transform::default(),
-                Visibility::default(),
-                StateScoped(Screen::Gameplay),
-                children![gen_goon(&entity_assets, position,)],
-            )),
+            ShipType::Asteroid => {
+                commands.spawn((
+                    Name::new("Asteroid"),
+                    StateScoped(Screen::Gameplay),
+                    gen_asteroid(
+                        &entity_assets,
+                        position,
+                        -(relative_postion + rand_deviation) * rand_speed,
+                    ),
+                ));
+            }
+            ShipType::EmpireGoon => {
+                commands.spawn((
+                    Name::new("Goon"),
+                    StateScoped(Screen::Gameplay),
+                    gen_goon(&entity_assets, position),
+                ));
+            }
+            ShipType::Rammer => {
+                commands
+                    .spawn((
+                        Name::new("Rammer"),
+                        StateScoped(Screen::Gameplay),
+                        gen_rammer(&entity_assets, position, Vec2::ZERO),
+                    ))
+                    .observe(
+                        |trigger: Trigger<OnCollisionStart>,
+                         mut commands: Commands,
+                         trans: Query<&Transform, With<RammerAI>>,
+                         player: Single<Entity, With<Player>>,
+                         assets: Res<EntityAssets>| {
+                            commands.trigger_targets(Damage(30), trigger.collider);
+                            commands.get_entity(trigger.target()).unwrap().despawn();
+                            commands.spawn((
+                                trans.get(trigger.target()).unwrap().clone(),
+                                assets.get_explosion(),
+                            ));
+                        },
+                    );
+            }
+            _ => {
+                commands.spawn((
+                    Name::new("???"),
+                    StateScoped(Screen::Gameplay),
+                    gen_goon(&entity_assets, position),
+                ));
+            }
         };
     }
 }
