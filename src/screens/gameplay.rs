@@ -20,6 +20,7 @@ pub(super) fn plugin(app: &mut App) {
         movement::plugin,
         enemies::plugin,
         upgrade_menu::plugin,
+        combat::plugin,
     ));
 
     app.add_systems(OnEnter(Screen::Gameplay), spawn_level);

@@ -25,6 +25,7 @@ use crate::{
 };
 
 use super::{
+    combat::{Damage, Health},
     enemies::gen_goon,
     player::{gen_player, Player, PlayerAssets},
 };
@@ -42,6 +43,13 @@ pub(super) fn plugin(app: &mut App) {
             .in_set(PausableSystems)
             .run_if(in_state(Screen::Gameplay))),
     );
+
+    app.add_observer(|trigger: Trigger<Damage>, mut query: Query<&mut Health>| {
+        let Ok(mut health) = query.get_mut(trigger.target()) else {
+            return;
+        };
+        health.0 -= trigger.0;
+    });
 }
 
 #[derive(Resource, Asset, Clone, Reflect)]

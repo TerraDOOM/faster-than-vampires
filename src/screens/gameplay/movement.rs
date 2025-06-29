@@ -82,9 +82,6 @@ fn apply_movement(
         linvel.apply_impulse(
             (transform.rotation * (controller.intent.y * THRUST * Vec2::Y).extend(0.0)).xy(),
         );
-
-        // dbg!(&angvel);
-        // dbg!(&linvel);
     }
 }
 

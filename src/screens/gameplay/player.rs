@@ -10,7 +10,7 @@ use crate::{asset_tracking::LoadResource, AppSystems, PausableSystems};
 
 use super::{
     combat::Damage,
-    enemies::ShipType,
+    enemies::{Ship, ShipType},
     movement::{MovementController, ScreenWrap},
 };
 
@@ -57,7 +57,7 @@ pub fn gen_player(
             ..default()
         },
         RigidBody::Dynamic,
-        Collider::circle(1.0),
+        Collider::capsule(0.75, 1.5),
         Mass(1.0),
         ExternalTorque::default().with_persistence(false),
         ExternalImpulse::default(),
@@ -133,9 +133,11 @@ fn record_player_directional_input(
 #[reflect(Resource)]
 pub struct PlayerAssets {
     #[dependency]
-    ducky: Handle<Image>,
+    pub ducky: Handle<Image>,
     #[dependency]
     pub steps: Vec<Handle<AudioSource>>,
+    #[dependency]
+    pub exploded: Handle<Image>,
 }
 
 impl FromWorld for PlayerAssets {
@@ -149,6 +151,7 @@ impl FromWorld for PlayerAssets {
                     settings.sampler = ImageSampler::nearest();
                 },
             ),
+            exploded: assets.load("images/exploded.png"),
             steps: vec![
                 assets.load("audio/sound_effects/step1.ogg"),
                 assets.load("audio/sound_effects/step2.ogg"),
