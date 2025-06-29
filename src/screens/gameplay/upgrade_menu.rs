@@ -172,6 +172,7 @@ fn button_system(
                 {
                     *upgrade_lvl += 1;
                     println!("Current level is: {}", (*upgrade_lvl));
+                    //TODO Handle upgrades here or?
                 } else {
                     return;
                 }
