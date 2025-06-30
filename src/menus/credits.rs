@@ -34,10 +34,10 @@ fn spawn_credits_menu(mut commands: Commands) {
 fn created_by() -> impl Bundle {
     grid(vec![
         ["Lukas Jacobsson Hakola", "Programer and organizer"],
-        ["Astrid Ström", "Lead Programer"],
+        ["Astrid Strom", "Lead Programer"],
         ["Otto Holst", "Lead Artist"],
         ["Gustav Jonsson", "Lead VFX Artist"],
-        ["Neddie Bergström", "Lead Sound designer"],
+        ["Neddie Bergstrom", "Lead Sound designer"],
     ])
 }
 
