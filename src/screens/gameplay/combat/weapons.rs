@@ -356,15 +356,6 @@ pub fn fire_cannon(
     }
 }
 
-#[derive(Component)]
-pub struct Laser {
-    firing: bool,
-    level: usize,
-    fire: Duration,
-    cooldown: Duration,
-    timer: Timer,
-}
-
 const LASER_FIRE_TIME: u64 = 6000;
 const LASER_COOLDOWN_TIME: u64 = 4000;
 
