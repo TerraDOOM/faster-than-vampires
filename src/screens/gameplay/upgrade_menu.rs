@@ -170,13 +170,26 @@ pub fn draft_upgrades(
         .cloned()
         .collect::<Vec<UpgradeTypes>>();
 
-    // let banned_upgrade: &HashSet;
-
-    // if owned_upgrades.get(UpgradeTypes::Cannon).is_some() {
-    //     if owned_upgrades.get(UpgradeTypes::Cannon).unwrap() > 2 {
-    //         banned_upgrade.insert(UpgradeTypes::Cannon);
-    //     }
-    // }
+    //Ban-list
+    let mut banned_upgrade = HashSet::new();
+    if gotten_upgrades
+        .get(&UpgradeTypes::Electricity)
+        .is_some_and(|x| *x > 2)
+    {
+        banned_upgrade.insert(UpgradeTypes::Electricity);
+    }
+    if gotten_upgrades
+        .get(&UpgradeTypes::Cannon)
+        .is_some_and(|x| *x > 3)
+    {
+        banned_upgrade.insert(UpgradeTypes::Cannon);
+    }
+    if gotten_upgrades
+        .get(&UpgradeTypes::BlackHole)
+        .is_some_and(|x| *x > 0)
+    {
+        banned_upgrade.insert(UpgradeTypes::BlackHole);
+    }
 
     let all_upgrades: HashSet<_> = UpgradeTypes::all_upgrades().into_iter().collect();
     let non_owned: Vec<UpgradeTypes> = all_upgrades
@@ -185,24 +198,24 @@ pub fn draft_upgrades(
         .collect();
     let mut non_owned = non_owned.into_iter().collect::<Vec<UpgradeTypes>>();
 
-    // let owned_allowed: Vec<UpgradeTypes> = banned_upgrade
-    //     .difference(&HashSet::from_iter(owned_upgrades.iter().cloned()))
-    //     .cloned()
-    //     .collect();
-    //let mut owned_allowed = non_owned.into_iter().collect::<Vec<UpgradeTypes>>();
+    let owned_allowed: Vec<UpgradeTypes> = HashSet::from_iter(owned_upgrades.iter().cloned())
+        .difference(&banned_upgrade)
+        .cloned()
+        .collect();
+    let owned_allowed = owned_allowed.into_iter().collect::<Vec<UpgradeTypes>>();
 
-    let upgrade1 = owned_upgrades.choose(&mut rng).unwrap();
+    let upgrade1 = owned_allowed.choose(&mut rng).unwrap().clone();
     let upgrade2 = non_owned
         .choose(&mut rng)
         .cloned()
-        .unwrap_or_else(|| *UpgradeTypes::all_upgrades().choose(&mut rng).unwrap());
+        .unwrap_or_else(|| owned_allowed.choose(&mut rng).unwrap().clone());
     non_owned.retain(|x| x != &upgrade2);
     let upgrade3 = non_owned
         .choose(&mut rng)
         .cloned()
-        .unwrap_or_else(|| *UpgradeTypes::all_upgrades().choose(&mut rng).unwrap());
+        .unwrap_or_else(|| owned_allowed.choose(&mut rng).unwrap().clone());
 
-    (*upgrade1, upgrade2, upgrade3)
+    (upgrade1, upgrade2, upgrade3)
 }
 
 pub fn generate_buy_menu(
@@ -329,9 +342,10 @@ pub fn gen_shop_item(
                 UpgradeTypes::Cannon => format!("Lvl.{} Cannon", upgrade_level),
                 UpgradeTypes::Thrusters => format!("Lvl.{} Thruster", upgrade_level),
                 UpgradeTypes::Electricity  => format!("Lvl.{} HV-field", upgrade_level),
-                UpgradeTypes::Laser  => format!("Lvl.{} Photon canon", upgrade_level),
+                UpgradeTypes::Laser  => format!("Lvl.{} Laser", upgrade_level),
                 UpgradeTypes::Health  => format!("Lvl.{} Shield", upgrade_level),
-                UpgradeTypes::Orb => format!("Lvl.{} Orb", upgrade_level),
+                UpgradeTypes::Orb => format!("Lvl.{} ORB", upgrade_level),
+                UpgradeTypes::BlackHole => format!("Lvl.{} Black Hole", upgrade_level),
                 _ => "unknown upgrade".to_string(),
             }),
             TextFont {
@@ -354,6 +368,9 @@ pub fn gen_shop_item(
                           UpgradeTypes::Thrusters => "The thruster moves the ship. Upgrades increase acceleration.".to_string(),
                           UpgradeTypes::Health => "The shield protects the ship from damage (health). Upgrades increase the ships health.".to_string(),
                           UpgradeTypes::Electricity  => "The High Voltage Field generator creates a nearby circle which damages enemies it touches. Upgrades increase the radius and damge.".to_string(),
+                          UpgradeTypes::Orb  => "The Original Rotating Ball, or ORB for short spinns around the ship damaging enemies. Upgrades increase ORB count and ORB speed.".to_string(),
+                          UpgradeTypes::Laser  => "The photon cannon shoots a concentrated laser beam ahead of the ship dealing damage in bursts. Upgrades increases the shooting time".to_string(),
+                          UpgradeTypes::BlackHole  => "The black hole generator creates blackholes around the ship. This module has no upgrades.".to_string(),
                           _ => "unkown upgrade".to_string(),
                       }),
                       TextFont {
