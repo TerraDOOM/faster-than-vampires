@@ -341,6 +341,7 @@ pub fn spawn_e_field(assets: &Res<WeaponAssets>, n: usize) -> Vec<impl Bundle> {
                 },
             },
             AudioPlayer::new(assets.sfx_field.clone()),
+            StateScoped(Screen::Gameplay),
             PlaybackSettings {
                 mode: bevy::audio::PlaybackMode::Loop,
                 ..default()
@@ -389,12 +390,6 @@ pub fn fire_cannon(
         .iter()
         .map(|trans| trans.translation)
         .min_by_key(|x| ((x - player_pos).length() * 100.0) as i32);
-
-    gizmos.circle_2d(
-        Isometry2d::from_translation(closest_enemy.unwrap_or(Vec3::ZERO).xy()),
-        50.0,
-        Color::srgb(1.0, 0.0, 0.0),
-    );
 
     for child in children {
         let Ok((global_transform, mut transform, mut cannon)) = cannons.get_mut(*child) else {
@@ -460,7 +455,14 @@ pub fn fire_cannon(
             Transform::from_translation(pos + dir * 20.0),
             AnimatedSprite::new(15, 9, AnimationType::Once),
         ));
-        commands.spawn(AudioPlayer::new(assets.sfx_bullet.clone()));
+        commands.spawn((
+            AudioPlayer::new(assets.sfx_bullet.clone()),
+            StateScoped(Screen::Gameplay),
+            PlaybackSettings {
+                mode: bevy::audio::PlaybackMode::Despawn,
+                ..default()
+            },
+        ));
     }
 }
 
@@ -590,6 +592,7 @@ fn fire_laser(
                             },
                             LaserBeam { len: closest_hit },
                             AudioPlayer::new(assets.sfx_laser.clone()),
+                            StateScoped(Screen::Gameplay),
                             PlaybackSettings {
                                 mode: bevy::audio::PlaybackMode::Loop,
                                 ..default()
@@ -780,6 +783,7 @@ fn fire_evil_laser(
                             },
                             EvilLaserBeam,
                             AudioPlayer::new(assets.sfx_evil_laser.clone()),
+                            StateScoped(Screen::Gameplay),
                             PlaybackSettings {
                                 mode: bevy::audio::PlaybackMode::Loop,
                                 ..default()
@@ -880,6 +884,7 @@ pub fn spawn_orbiters(n: usize, assets: &Res<WeaponAssets>) -> (impl Bundle, Vec
             CollisionEventsEnabled,
             Sensor,
             AudioPlayer::new(assets.sfx_orb.clone()),
+            StateScoped(Screen::Gameplay),
             PlaybackSettings {
                 mode: bevy::audio::PlaybackMode::Loop,
                 ..default()

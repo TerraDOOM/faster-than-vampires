@@ -170,7 +170,10 @@ pub fn spawn_level(
         },
     ));
 
-    commands.spawn(VisistedPlanet(PlanetType::LavaPlanet));
+    commands.spawn((
+        VisistedPlanet(PlanetType::LavaPlanet),
+        StateScoped(Screen::Gameplay),
+    ));
 
     //Spawn music
     commands.spawn((
@@ -180,6 +183,7 @@ pub fn spawn_level(
             mode: bevy::audio::PlaybackMode::Loop,
             ..default()
         },
+        StateScoped(Screen::Gameplay),
     ));
 
     commands
@@ -418,6 +422,7 @@ pub fn gen_ui(ui_assets: &Res<UIAssets>) -> impl Bundle {
         Name::new("UIBox"),
         UIBox,
         BackgroundColor(Color::srgb(0.3, 0.3, 0.3)),
+        StateScoped(Screen::Gameplay),
         Node {
             width: Val::Percent(100.0),
             height: Val::Percent(15.0),
@@ -763,7 +768,6 @@ pub fn spawn_enemy(
                     );
             }
             ShipType::Rammer => {
-                println!("spawn_angle: {}", relative_postion.to_angle());
                 commands
                     .spawn((
                         Name::new("Rammer"),

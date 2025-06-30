@@ -177,7 +177,7 @@ pub fn process_flagship_ai(
             if angvel.0 > 0.1 {
                 angular_damping.0 = 10.0;
             } else {
-                force.apply_impulse(enemy_forward * 700.0);
+                force.apply_impulse(enemy_forward * 900.0);
             }
             continue;
         }
