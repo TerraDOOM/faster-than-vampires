@@ -190,10 +190,10 @@ impl FromWorld for WeaponAssets {
                 None,
             )),
             exit_shop: assets.load("audio/sound_effects/button_click2.ogg"),
-            sfx_laser: assets.load("audio/sound_effects/button_click2.ogg"),
-            sfx_bullet: assets.load("audio/sound_effects/laser_shoot.ogg"),
-            sfx_orb: assets.load("audio/sound_effects/button_click2.ogg"),
-            sfx_field: assets.load("audio/sound_effects/button_click2.ogg"),
+            sfx_laser: assets.load("audio/sound_effects/laser_shoot.ogg"),
+            sfx_bullet: assets.load("audio/sound_effects/canon_shoot.ogg"),
+            sfx_orb: assets.load("audio/sound_effects/sound_orb_swhoosh.ogg"),
+            sfx_field: assets.load("audio/sound_effects/electric_static.ogg"),
         }
     }
 }
@@ -248,56 +248,65 @@ pub fn spawn_cannons(cannon: &Handle<Image>, n: usize) -> Vec<impl Bundle> {
 pub struct EField;
 
 pub fn spawn_e_field(assets: &Res<WeaponAssets>, n: usize) -> Vec<impl Bundle> {
-    let radius = match n {
-        0 => 0.0,
-        1 => 96.0,
-        2 => 128.0,
-        3 => 256.0,
-        _ => todo!(),
-    };
+    if n == 0 {
+        vec![]
+    } else {
+        let radius = match n {
+            0 => 0.0,
+            1 => 96.0,
+            2 => 128.0,
+            3 => 256.0,
+            _ => todo!(),
+        };
 
-    let mut fields = Vec::new();
+        let mut fields = Vec::new();
 
-    fields.push((
-        match n {
-            3 => Sprite {
-                image: assets.e_field_big.clone(),
-                custom_size: Some(Vec2 {
-                    x: radius,
-                    y: radius,
-                }),
-                texture_atlas: Some(TextureAtlas {
-                    layout: assets.e_field_big_layout.clone(),
-                    index: 0,
-                }),
+        fields.push((
+            match n {
+                3 => Sprite {
+                    image: assets.e_field_big.clone(),
+                    custom_size: Some(Vec2 {
+                        x: radius,
+                        y: radius,
+                    }),
+                    texture_atlas: Some(TextureAtlas {
+                        layout: assets.e_field_big_layout.clone(),
+                        index: 0,
+                    }),
+                    ..default()
+                },
+
+                _ => Sprite {
+                    image: assets.e_field.clone(),
+                    custom_size: Some(Vec2 {
+                        x: radius,
+                        y: radius,
+                    }),
+                    texture_atlas: Some(TextureAtlas {
+                        layout: assets.e_field_layout.clone(),
+                        index: 0,
+                    }),
+                    ..default()
+                },
+            },
+            AudioPlayer::new(assets.sfx_field.clone()),
+            PlaybackSettings {
+                mode: bevy::audio::PlaybackMode::Loop,
                 ..default()
             },
-
-            _ => Sprite {
-                image: assets.e_field.clone(),
-                custom_size: Some(Vec2 {
-                    x: radius,
-                    y: radius,
-                }),
-                texture_atlas: Some(TextureAtlas {
-                    layout: assets.e_field_layout.clone(),
-                    index: 0,
-                }),
-                ..default()
+            CollisionEventsEnabled,
+            ContinuosDamage {
+                damage_per_frame: n * 10,
             },
-        },
-        CollisionEventsEnabled,
-        ContinuosDamage {
-            damage_per_frame: n * 10,
-        },
-        Collider::circle(radius / 2.4),
-        AnimatedSprite::new(30, 15, AnimationType::Repeating),
-        Transform::from_xyz(0.0, 0.0, -0.2),
-        EField,
-        Sensor,
-    ));
+            Collider::circle(radius / 2.4),
+            AnimatedSprite::new(30, 15, AnimationType::Repeating),
+            Transform::from_xyz(0.0, 0.0, -0.2),
+            EField,
+            Sensor,
+        ));
 
-    fields
+        fields
+    }
 }
 
 #[derive(Component)]
@@ -530,6 +539,11 @@ fn fire_laser(
                                 ..default()
                             },
                             LaserBeam { len: closest_hit },
+                            AudioPlayer::new(assets.sfx_laser.clone()),
+                            PlaybackSettings {
+                                mode: bevy::audio::PlaybackMode::Loop,
+                                ..default()
+                            },
                         ))
                         .with_children(|laser_sprite| {
                             laser_sprite.spawn((
@@ -620,6 +634,11 @@ pub fn spawn_orbiters(n: usize, assets: &Res<WeaponAssets>) -> (impl Bundle, Vec
             },
             CollisionEventsEnabled,
             Sensor,
+            AudioPlayer::new(assets.sfx_orb.clone()),
+            PlaybackSettings {
+                mode: bevy::audio::PlaybackMode::Loop,
+                ..default()
+            },
         ))
     }
 
