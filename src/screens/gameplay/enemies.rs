@@ -9,6 +9,7 @@ use super::{
     animation::AnimatedSprite,
     combat::{Damage, Health},
     player::Player,
+    GameplayLogic,
 };
 
 #[repr(usize)]
@@ -34,11 +35,17 @@ pub(super) fn plugin(app: &mut App) {
     app.register_type::<EntityAssets>();
     app.load_resource::<EntityAssets>();
 
-    app.add_systems(Update, process_goon_ai.in_set(PausableSystems));
-    app.add_systems(Update, process_rammer_ai.in_set(PausableSystems));
-    app.add_systems(Update, process_flagship_ai.in_set(PausableSystems));
-
-    app.add_systems(Update, cont_damage_update.in_set(PausableSystems));
+    app.add_systems(
+        Update,
+        (
+            process_goon_ai,
+            process_rammer_ai,
+            process_flagship_ai,
+            cont_damage_update,
+            evil_cont_damage_update,
+        )
+            .in_set(GameplayLogic),
+    );
 }
 
 #[derive(Component)]
@@ -237,7 +244,6 @@ pub fn process_rammer_ai(
         &mut AngularDamping,
         &mut RammerAI,
     )>,
-    mut gizmos: Gizmos,
     player: Single<&Transform, With<Player>>,
 ) {
     for (
@@ -260,12 +266,6 @@ pub fn process_rammer_ai(
 
             let to_player = (player.translation.xy() - rammer_pos.translation.xy()).normalize();
 
-            gizmos.arrow_2d(
-                rammer_pos.translation.xy(),
-                rammer_pos.translation.xy() + enemy_forward * 100.0,
-                Color::srgba(1.0, 0.0, 0.0, 1.0),
-            );
-
             // Get the dot product between the enemy forward vector and the direction to the player.
             let forward_dot_player = enemy_forward.dot(to_player);
             //If 1, we are already facing them
@@ -287,11 +287,6 @@ pub fn process_rammer_ai(
             torque.apply_torque(rotation_sign * 300.0);
         } else if *ai == RammerAI::Charging {
             angular_damping.0 = 80.0;
-            gizmos.arrow_2d(
-                rammer_pos.translation.xy(),
-                rammer_pos.translation.xy() + enemy_forward * 100.0,
-                Color::srgba(0.0, 1.0, 0.0, 1.0),
-            );
             if linvel.0.length() < 50.0 {
                 linear_damping.0 = 100.0;
             }
@@ -376,17 +371,37 @@ pub struct ContinuosDamage {
 
 pub fn cont_damage_update(
     mut commands: Commands,
-    mut gizmo: Gizmos,
-    damage_zones: Query<(&Transform, &ContinuosDamage, Entity)>,
+    damage_zones: Query<(&ContinuosDamage, Entity)>,
     enemies: Query<Entity, With<Enemy>>,
     collisions: Collisions,
 ) {
-    for (zone_transforms, damage, zone_entity) in damage_zones {
+    for (damage, zone_entity) in damage_zones {
         let currently_colliding = collisions.collisions_with(zone_entity);
         for one_collision in currently_colliding {
             let collision_target = one_collision.body2.unwrap();
             if enemies.contains(collision_target) {
-                println!("Field colliding with something");
+                commands.trigger_targets(Damage(damage.damage_per_frame as i32), collision_target);
+            }
+        }
+    }
+}
+
+#[derive(Component, Debug, Copy, Clone, PartialEq, Eq)]
+pub struct EvilContinuousDamage {
+    pub damage_per_frame: usize,
+}
+
+pub fn evil_cont_damage_update(
+    mut commands: Commands,
+    damage_zones: Query<(&EvilContinuousDamage, Entity)>,
+    stuff_to_hit: Query<Entity, (Or<(With<Enemy>, With<Player>)>, Without<FlagshipAI>)>,
+    collisions: Collisions,
+) {
+    for (damage, zone_entity) in damage_zones {
+        let currently_colliding = collisions.collisions_with(zone_entity);
+        for one_collision in currently_colliding {
+            let collision_target = one_collision.body2.unwrap();
+            if stuff_to_hit.contains(collision_target) {
                 commands.trigger_targets(Damage(damage.damage_per_frame as i32), collision_target);
             }
         }
