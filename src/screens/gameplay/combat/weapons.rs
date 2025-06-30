@@ -248,11 +248,11 @@ pub fn spawn_e_field(assets: &Res<WeaponAssets>, n: usize) -> Vec<impl Bundle> {
         ContinuosDamage {
             damage_per_frame: 100,
         },
-        Collider::circle(radius / 2.0),
-        RigidBody::Static,
+        Collider::circle(radius / 2.4),
         AnimatedSprite::new(30, 15, AnimationType::Repeating),
         Transform::from_xyz(0.0, 0.0, -0.2),
         EField,
+        Sensor,
     ));
 
     fields
@@ -262,6 +262,7 @@ pub fn spawn_e_field(assets: &Res<WeaponAssets>, n: usize) -> Vec<impl Bundle> {
 pub struct Laser {
     firing: bool,
     level: usize,
+    damage: usize,
     fire: Duration,
     cooldown: Duration,
     timer: Timer,
@@ -491,6 +492,9 @@ fn fire_laser(
                                 Transform::from_xyz(closest_hit / 2.0 / 2.0, 0.0, 0.0),
                                 Collider::rectangle(closest_hit, 32.0),
                                 CollisionEventsEnabled,
+                                ContinuosDamage {
+                                    damage_per_frame: laser.damage,
+                                },
                                 Sensor,
                             ));
                             laser_sprite.spawn((

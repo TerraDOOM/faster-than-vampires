@@ -6,12 +6,8 @@ use std::collections::{HashMap, HashSet};
 use crate::menus::Menu;
 
 use super::{
-<<<<<<< Updated upstream
     combat::weapons::{self, WeaponAssets},
-=======
-    combat::weapons::WeaponAssets,
     enemies,
->>>>>>> Stashed changes
     level::{PlanetType, UIAssets, VisistedPlanet},
     player::Player,
     GameplayLogic,
@@ -90,16 +86,6 @@ pub fn update_upgrades(
         .cloned()
         .unwrap_or(0);
 
-    player.with_children(|parent| {
-        for cannon in cannons {
-            parent.spawn(cannon);
-        }
-
-        if laser > 0 {
-            parent.spawn(weapons::spawn_laser(laser));
-        }
-    });
-
     let fields = super::combat::weapons::spawn_e_field(
         &weapon_assets,
         upgrades
@@ -108,9 +94,18 @@ pub fn update_upgrades(
             .cloned()
             .unwrap_or(0),
     );
-    player.with_children(|commands| {
+
+    player.with_children(|parent| {
+        for cannon in cannons {
+            parent.spawn(cannon);
+        }
+
+        if laser > 0 {
+            parent.spawn(weapons::spawn_laser(laser));
+        }
+
         for field in fields {
-            commands.spawn(field);
+            parent.spawn(field);
         }
     });
 }

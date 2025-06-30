@@ -32,7 +32,7 @@ pub(super) fn plugin(app: &mut App) {
     app.register_type::<UIAssets>();
     app.load_resource::<UIAssets>();
 
-    // app.add_systems(Update, world_update.in_set(GameplayLogic));
+    app.add_systems(Update, world_update.in_set(GameplayLogic));
 }
 
 const LVL1X: f32 = 0.0;
