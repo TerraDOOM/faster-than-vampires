@@ -11,7 +11,7 @@ use super::{
         Health,
     },
     enemies::FlagshipAI,
-    level::{PlanetType, UIAssets, VisistedPlanet},
+    level::{MainOST, PlanetType, UIAssets, VisistedPlanet},
     player::Player,
     GameplayLogic,
 };
@@ -80,6 +80,7 @@ pub fn update_upgrades(
     weapon_assets: Res<WeaponAssets>,
     mut hp: Single<&mut Health, With<Player>>,
     mut flagship_entity: Single<Entity, With<FlagshipAI>>,
+    mut ost: Single<&mut AudioPlayer, With<MainOST>>,
     upgrades: Single<(Entity, &Upgrades), (With<Player>, Changed<Upgrades>)>,
 ) {
     //Spawn music
@@ -89,6 +90,7 @@ pub fn update_upgrades(
 
     if upgrades.gotten_upgrades.get(&UpgradeTypes::Emp).is_some() {
         commands.entity(*flagship_entity).insert(Health(1000));
+        **ost = AudioPlayer::new(weapon_assets.boss_theme.clone());
     }
 
     let mut player = commands.get_entity(ent).unwrap();

@@ -102,6 +102,9 @@ pub struct WeaponAssets {
     pub exit_shop: Handle<AudioSource>,
 
     #[dependency]
+    pub boss_theme: Handle<AudioSource>,
+
+    #[dependency]
     pub sfx_laser: Handle<AudioSource>,
     #[dependency]
     pub sfx_bullet: Handle<AudioSource>,
@@ -238,6 +241,7 @@ impl FromWorld for WeaponAssets {
             sfx_bullet: assets.load("audio/sound_effects/canon_shoot.ogg"),
             sfx_orb: assets.load("audio/sound_effects/sound_orb_swhoosh.ogg"),
             sfx_field: assets.load("audio/sound_effects/electric_static.ogg"),
+            boss_theme: assets.load("audio/music/Flagship_boss.ogg"),
         }
     }
 }
@@ -666,7 +670,7 @@ impl EvilLaser {
             sweep_duration: Duration::from_secs(10),
             cooldown_duration: Duration::from_secs(30),
             timer: Timer::new(Duration::from_secs(10), TimerMode::Repeating),
-            damage: 200,
+            damage: 30,
         }
     }
 
@@ -725,7 +729,7 @@ fn fire_evil_laser(
         laser.update_timer(timer.delta());
         let mut laser_ent = commands.entity(laser_ent_id);
 
-        let closest_hit = 4000.0;
+        let closest_hit = 2000.0;
 
         if laser.state == LSF::Aiming {
             laser_ent.despawn_related::<Children>();
