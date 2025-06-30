@@ -1,4 +1,5 @@
-use bevy::{input::common_conditions::input_just_pressed, prelude::*};
+use avian2d::parry::utils::hashmap;
+use bevy::{input::common_conditions::input_just_pressed, prelude::*, state::commands};
 use rand::seq::IndexedRandom;
 use std::collections::{HashMap, HashSet};
 
@@ -6,7 +7,7 @@ use crate::menus::Menu;
 
 use super::{
     combat::weapons::WeaponAssets,
-    level::{PlanetType, UIAssets},
+    level::{PlanetType, UIAssets, VisistedPlanet},
     player::Player,
     GameplayLogic,
 };
@@ -46,6 +47,7 @@ pub enum UpgradeTypes {
     Electricity,
     Health,
     Thrusters,
+    Emp,
 }
 
 impl UpgradeTypes {
@@ -80,6 +82,20 @@ pub fn update_upgrades(
     player.with_children(|commands| {
         for cannon in cannons {
             commands.spawn(cannon);
+        }
+    });
+
+    let fields = super::combat::weapons::spawn_e_field(
+        &weapon_assets,
+        upgrades
+            .gotten_upgrades
+            .get(&UpgradeTypes::Electricity)
+            .cloned()
+            .unwrap_or(0),
+    );
+    player.with_children(|commands| {
+        for field in fields {
+            commands.spawn(field);
         }
     });
 }
@@ -123,57 +139,61 @@ pub fn generate_buy_menu(
     mut commands: Commands,
     ui_assets: Res<UIAssets>,
     upgrades: Single<&Upgrades, Without<UIShop>>,
+    next_planet: Single<&mut VisistedPlanet>,
 ) {
-    let drafted_upgrades = draft_upgrades(&upgrades.gotten_upgrades, PlanetType::EarthPlanet);
-
-    commands.spawn((
-        Name::new("UIBox"),
-        UIShop,
-        StateScoped(Menu::Buy),
-        BackgroundColor(Color::srgb(0.7, 0.7, 0.7)),
-        Node {
-            width: Val::Percent(80.0),
-            height: Val::Percent(75.0),
-            right: Val::Percent(-10.0),
-            top: Val::Percent(20.0),
-            align_items: AlignItems::Center,
-            justify_content: JustifyContent::FlexEnd,
-            flex_direction: FlexDirection::Column,
-            ..default()
-        },
-        ZIndex(2),
-        GlobalZIndex(2),
-        children![
-            ((
-                Text::new("Shop"),
-                TextFont {
-                    font: ui_assets.font.clone(),
-                    font_size: 48.0,
-                    ..default()
-                },
-                TextColor(Color::srgb(1.0, 1.0, 1.0)),
-                Node {
-                    width: Val::Percent(100.0),
-                    height: Val::Percent(25.0),
-                    top: Val::Percent(0.0),
-                    ..default()
-                },
-            )),
-            ((
-                Node {
-                    width: Val::Percent(100.0),
-                    height: Val::Percent(75.0),
-                    flex_direction: FlexDirection::Row,
-                    ..default()
-                },
-                children![
-                    gen_shop_item(&ui_assets, drafted_upgrades.0, 0, 1),
-                    gen_shop_item(&ui_assets, drafted_upgrades.1, 0, 2),
-                    gen_shop_item(&ui_assets, drafted_upgrades.2, 0, 3),
-                ],
-            ))
-        ],
-    ));
+    if next_planet.0 == PlanetType::EarthPlanet {
+        spawn_final_shop(commands, &ui_assets);
+    } else {
+        let drafted_upgrades = draft_upgrades(&upgrades.gotten_upgrades, next_planet.0);
+        commands.spawn((
+            Name::new("UIBox"),
+            UIShop,
+            StateScoped(Menu::Buy),
+            BackgroundColor(Color::srgb(0.7, 0.7, 0.7)),
+            Node {
+                width: Val::Percent(80.0),
+                height: Val::Percent(75.0),
+                right: Val::Percent(-10.0),
+                top: Val::Percent(20.0),
+                align_items: AlignItems::Center,
+                justify_content: JustifyContent::FlexEnd,
+                flex_direction: FlexDirection::Column,
+                ..default()
+            },
+            ZIndex(2),
+            GlobalZIndex(2),
+            children![
+                ((
+                    Text::new("Shop"),
+                    TextFont {
+                        font: ui_assets.font.clone(),
+                        font_size: 48.0,
+                        ..default()
+                    },
+                    TextColor(Color::srgb(1.0, 1.0, 1.0)),
+                    Node {
+                        width: Val::Percent(100.0),
+                        height: Val::Percent(25.0),
+                        top: Val::Percent(0.0),
+                        ..default()
+                    },
+                )),
+                ((
+                    Node {
+                        width: Val::Percent(100.0),
+                        height: Val::Percent(75.0),
+                        flex_direction: FlexDirection::Row,
+                        ..default()
+                    },
+                    children![
+                        gen_shop_item(&ui_assets, drafted_upgrades.0, 0, 1),
+                        gen_shop_item(&ui_assets, drafted_upgrades.1, 0, 2),
+                        gen_shop_item(&ui_assets, drafted_upgrades.2, 0, 3),
+                    ]
+                ))
+            ],
+        ));
+    }
 }
 
 pub fn gen_shop_item(
@@ -245,6 +265,107 @@ pub fn gen_shop_item(
     )
 }
 
+//Stupid fucking copy, but if's cant have different types
+pub fn spawn_final_shop(mut commands: Commands, ui_assets: &Res<UIAssets>) {
+    commands.spawn((
+        Name::new("UIBox"),
+        UIShop,
+        StateScoped(Menu::Buy),
+        BackgroundColor(Color::srgb(0.7, 0.7, 0.7)),
+        Node {
+            width: Val::Percent(80.0),
+            height: Val::Percent(75.0),
+            right: Val::Percent(-10.0),
+            top: Val::Percent(20.0),
+            align_items: AlignItems::Center,
+            justify_content: JustifyContent::Center,
+            flex_direction: FlexDirection::Column,
+            ..default()
+        },
+        ZIndex(2),
+        GlobalZIndex(2),
+        children![
+            ((
+                Text::new("Empire research lab"),
+                TextFont {
+                    font: ui_assets.font.clone(),
+                    font_size: 48.0,
+                    ..default()
+                },
+                TextColor(Color::srgb(1.0, 1.0, 1.0)),
+                Node {
+                    width: Val::Percent(100.0),
+                    height: Val::Percent(25.0),
+                    top: Val::Percent(5.0),
+                    ..default()
+                },
+            )),
+            ((
+                Node {
+                    width: Val::Percent(100.0),
+                    height: Val::Percent(75.0),
+                    flex_direction: FlexDirection::Row,
+                    ..default()
+                },
+                children![gen_final_shop_item(ui_assets)]
+            ))
+        ],
+    ));
+}
+
+pub fn gen_final_shop_item(ui_assets: &Res<UIAssets>) -> impl Bundle {
+    (
+        UIShopButton {
+            upgrade: UpgradeTypes::Emp,
+        },
+        Button,
+        Node {
+            width: Val::Percent(80.0),
+            height: Val::Percent(70.0),
+            left: Val::Percent(10.0),
+            align_items: AlignItems::Center,
+            flex_direction: FlexDirection::Column,
+            ..default()
+        },
+        BackgroundColor(Color::srgb(0.5, 0.5, 0.5)),
+        children![
+            (
+                //Title
+                Node {
+                    width: Val::Percent(90.0),
+                    height: Val::Percent(25.0),
+                    top: Val::Percent(5.0),
+                    left: Val::Percent(5.0),
+                    ..default()
+                },
+                Text::new("Experimental Electro-Magnetic-Pulse"),
+                TextFont {
+                    font: ui_assets.font.clone(),
+                    font_size: 32.0,
+                    ..default()
+                },
+                TextColor(Color::srgb(1.0, 1.0, 1.0)),
+            ),
+            (
+                //Brödtext
+                Node {
+                    width: Val::Percent(90.0),
+                    height: Val::Percent(70.0),
+                    left: Val::Percent(5.0),
+                    ..default()
+                },
+                Text::new("A newly developed EMP cannon, capable of invalidating the most powerfull of shields. After getting this upgrade, the flagship's shield will be offline making the ship vulnarable to your attacks."),
+                TextFont {
+                    font: ui_assets.font.clone(),
+                    font_size: 16.0,
+                    ..default()
+                },
+                TextColor(Color::srgb(1.0, 1.0, 1.0)),
+            )
+        ],
+    )
+}
+
 #[derive(Component, Debug, Clone, Copy, PartialEq, Eq, Default, Reflect)]
 #[reflect(Component)]
 pub struct UIShop;
@@ -267,17 +388,14 @@ fn button_system(
         match *interaction {
             Interaction::Pressed => {
                 *color = BackgroundColor(Color::srgb(0.5, 0.5, 0.5));
-                if let Some(upgrade_lvl) = upgrades
-                    .into_inner()
+                let mut hashmap = upgrades.into_inner();
+                let mut upgrade_lvl = hashmap
                     .gotten_upgrades
-                    .get_mut(&ui_shop_button.upgrade)
-                {
-                    *upgrade_lvl += 1;
-                    println!("Current level is: {}", (*upgrade_lvl));
-                    //handle_upgrade();
-                } else {
-                    return;
-                }
+                    .entry(ui_shop_button.upgrade)
+                    .or_insert(0);
+                *upgrade_lvl += 1;
+                println!("Current level is: {}", (*upgrade_lvl));
+                //handle_upgrade();
                 go_back(next_menu);
                 return;
             }

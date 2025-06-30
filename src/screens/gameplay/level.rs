@@ -116,6 +116,10 @@ pub struct ObjectiveMarker;
 
 #[derive(Component, Debug, Clone, Copy, PartialEq, Eq, Default, Reflect)]
 #[reflect(Component)]
+pub struct VisistedPlanet(pub PlanetType);
+
+#[derive(Component, Debug, Clone, Copy, PartialEq, Eq, Default, Reflect)]
+#[reflect(Component)]
 pub struct BackgroundAccess;
 /// A system that spawns the main level.
 pub fn spawn_level(
@@ -138,6 +142,8 @@ pub fn spawn_level(
             ..default()
         },
     ));
+
+    commands.spawn(VisistedPlanet(PlanetType::LavaPlanet));
 
     commands.spawn((
         Name::new("Level"),
@@ -223,10 +229,11 @@ pub fn spawn_level(
 }
 
 #[repr(usize)]
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Default, Reflect)]
 pub enum PlanetType {
-    GreenPlanet,
+    #[default]
     LavaPlanet,
+    GreenPlanet,
     EarthPlanet,
     WaterPlanet,
     DesertPlanet,
@@ -240,6 +247,7 @@ pub struct Planet {
     pub x: f32,
     pub y: f32,
     pub has_shopped: bool,
+    pub planet_type: PlanetType,
 }
 
 pub fn gen_planet(
@@ -254,6 +262,7 @@ pub fn gen_planet(
             x: position.x,
             y: position.y,
             has_shopped: first_planet,
+            planet_type: planet_name,
         },
         Sprite {
             image: match planet_name {
@@ -500,6 +509,7 @@ pub fn world_update(
             Without<MiniMapPos>,
         ),
     >, //For shop checking
+    mut next_planet: Single<&mut VisistedPlanet>,
     mut next_menu: ResMut<NextState<Menu>>,
 ) {
     gizmo.rect_2d(Isometry2d::IDENTITY, Vec2::new(100.0, 100.0), GREEN);
@@ -520,7 +530,7 @@ pub fn world_update(
             && (player.translation - planet_transform.translation).length() < 200.0
         {
             planet.has_shopped = true;
-
+            next_planet.0 = planet.planet_type;
             commands.entity(entity).despawn_related::<Children>();
             next_menu.set(Menu::Buy);
         }
