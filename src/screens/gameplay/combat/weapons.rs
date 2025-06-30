@@ -394,6 +394,7 @@ pub fn spawn_laser(level: usize) -> impl Bundle {
             firing: true,
             level,
             fire,
+            damage: 100,
             cooldown,
             timer: Timer::new(fire, TimerMode::Once),
         },
