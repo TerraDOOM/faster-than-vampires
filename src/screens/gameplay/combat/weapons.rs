@@ -32,6 +32,10 @@ pub struct WeaponAssets {
     pub laser_shot_layout: Handle<TextureAtlasLayout>,
     #[dependency]
     pub cannon: Handle<Image>,
+
+    #[dependency]
+    pub E_field: Handle<Image>,
+    pub E_field_layout: Handle<TextureAtlasLayout>,
 }
 
 impl WeaponAssets {
@@ -49,14 +53,24 @@ impl WeaponAssets {
 
 impl FromWorld for WeaponAssets {
     fn from_world(world: &mut World) -> Self {
+        use crate::util::make_nearest;
         let assets = world.get_resource_mut::<AssetServer>().unwrap();
         WeaponAssets {
-            cannon: assets.load("images/entities/Gun1.png"),
+            cannon: assets.load_with_settings("images/entities/Gun1.png", make_nearest),
             laser_shot: assets.load("VFX/Flipbooks/TFlip_LaserBall.png"),
             laser_shot_layout: assets.add(TextureAtlasLayout::from_grid(
                 UVec2::splat(32),
                 5,
                 3,
+                None,
+                None,
+            )),
+            E_field: assets
+                .load_with_settings("VFX/Flipbooks/TFlip_ElectricShield.png", make_nearest),
+            E_field_layout: assets.add(TextureAtlasLayout::from_grid(
+                UVec2::splat(64),
+                4, //Width
+                4,
                 None,
                 None,
             )),
@@ -108,6 +122,44 @@ pub fn spawn_cannons(cannon: &Handle<Image>, n: usize) -> Vec<impl Bundle> {
     }
 
     cannons
+}
+
+#[derive(Component)]
+pub struct EField;
+
+pub fn spawn_e_field(assets: &Res<WeaponAssets>, n: usize) -> Vec<impl Bundle> {
+    let radius = match n {
+        0 => 0.0,
+        1 => 96.0,
+        2 => 128.0,
+        3 => 256.0,
+        _ => todo!(),
+    };
+
+    let mut fields = Vec::new();
+
+    fields.push((
+        Sprite {
+            image: assets.E_field.clone(),
+            custom_size: Some(Vec2 {
+                x: radius,
+                y: radius,
+            }),
+            texture_atlas: Some(TextureAtlas {
+                layout: assets.E_field_layout.clone(),
+                index: 0,
+            }),
+            ..default()
+        },
+        CollisionEventsEnabled,
+        Collider::circle(radius / 2.0),
+        RigidBody::Static,
+        AnimatedSprite::new(30, 15, AnimationType::Repeating),
+        Transform::from_xyz(0.0, 0.0, -0.2),
+        EField,
+    ));
+
+    fields
 }
 
 #[derive(Component)]
