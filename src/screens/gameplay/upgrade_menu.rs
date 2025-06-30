@@ -81,7 +81,7 @@ pub fn update_upgrades(
     upgrades: Single<(Entity, &Upgrades), (With<Player>, Changed<Upgrades>)>,
 ) {
     //Spawn music
-    commands.spawn((AudioPlayer::new(weapon_assets.exit_shop.clone()),));
+    //commands.spawn((AudioPlayer::new(weapon_assets.exit_shop.clone()),));
 
     let (ent, upgrades) = upgrades.into_inner();
     let mut player = commands.get_entity(ent).unwrap();
@@ -138,13 +138,6 @@ pub fn update_upgrades(
 
         for field in fields {
             parent.spawn(field);
-            parent.spawn((
-                AudioPlayer::new(weapon_assets.sfx_field.clone()),
-                PlaybackSettings {
-                    mode: bevy::audio::PlaybackMode::Loop,
-                    ..default()
-                },
-            ));
         }
 
         if orbs.len() > 0 {
@@ -153,13 +146,6 @@ pub fn update_upgrades(
                     cont.spawn(orb);
                 }
             });
-            parent.spawn((
-                AudioPlayer::new(weapon_assets.sfx_orb.clone()),
-                PlaybackSettings {
-                    mode: bevy::audio::PlaybackMode::Loop,
-                    ..default()
-                },
-            ));
         }
     });
 }

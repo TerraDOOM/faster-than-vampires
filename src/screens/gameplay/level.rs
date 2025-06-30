@@ -18,7 +18,7 @@ use crate::{
 };
 
 use super::{
-    combat::{Damage, Health},
+    combat::{weapons::EvilLaser, Damage, Health},
     enemies::{FlagshipAI, RammerAI, ShipType},
     player::{gen_player, Player, PlayerAssets},
     upgrade_menu::{UpgradeTypes, Upgrades},
@@ -39,8 +39,8 @@ const LVL1X: f32 = 4000.0;
 const LVL2X: f32 = 21000.0;
 const LVL3X: f32 = 35000.0;
 const LVL4X: f32 = 50000.0;
-const LVL5X: f32 = 65000.0;
-const LVL6X: f32 = 80000.0;
+const LVL5X: f32 = 62000.0;
+const LVL6X: f32 = 75000.0;
 const LVL7X: f32 = 100000.0;
 const YMAX: f32 = 15000.0;
 
@@ -69,6 +69,8 @@ pub struct LevelAssets {
     planet8: Handle<Image>,
     #[dependency]
     planet9: Handle<Image>,
+    #[dependency]
+    planet10: Handle<Image>,
 }
 
 #[derive(Resource, Asset, Clone, Reflect)]
@@ -119,6 +121,7 @@ impl FromWorld for LevelAssets {
             planet7: assets.load_with_settings("images/level/Planet7.png", make_nearest),
             planet8: assets.load_with_settings("images/level/Planet8.png", make_nearest),
             planet9: assets.load_with_settings("images/level/Planet9.png", make_nearest),
+            planet10: assets.load_with_settings("images/level/Planet10.png", make_nearest),
         }
     }
 }
@@ -144,6 +147,7 @@ pub fn spawn_level(
 ) {
     commands.spawn((
         Name::new("Background"),
+        StateScoped(Screen::Gameplay),
         Transform::from_xyz(0.0, 0.0, -1.0),
         BackgroundAccess,
         Sprite {
@@ -167,86 +171,101 @@ pub fn spawn_level(
         },
     ));
 
-    commands.spawn((
-        Name::new("Level"),
-        Transform::from_xyz(0.0, 0.0, 0.0),
-        Visibility::default(),
-        StateScoped(Screen::Gameplay),
-        children![
-            gen_player(400.0, &player_assets),
-            gen_planet(
-                &level_assets,
-                &ui_assets,
-                Vec2::new(LVL1X * 0.1, 128.0),
-                PlanetType::LavaPlanet,
-                false
-            ),
-            gen_planet(
-                &level_assets,
-                &ui_assets,
-                Vec2::new(LVL2X * 0.1, YMAX / 25.0),
-                PlanetType::GreenPlanet,
-                false
-            ),
-            gen_planet(
-                &level_assets,
-                &ui_assets,
-                Vec2::new(LVL2X * 0.1, -YMAX / 25.0),
-                PlanetType::DesertPlanet,
-                false
-            ),
-            gen_planet(
-                &level_assets,
-                &ui_assets,
-                Vec2::new(LVL3X * 0.1, 0.0),
-                PlanetType::HollowPlanet,
-                false
-            ),
-            gen_planet(
-                &level_assets,
-                &ui_assets,
-                Vec2::new(LVL4X * 0.1, YMAX / 2.0),
-                PlanetType::WaterPlanet,
-                false
-            ),
-            gen_planet(
-                &level_assets,
-                &ui_assets,
-                Vec2::new(LVL4X * 0.1, -YMAX / 2.0),
-                PlanetType::DesertPlanet,
-                false
-            ),
-            gen_planet(
-                &level_assets,
-                &ui_assets,
-                Vec2::new(LVL5X * 0.1, 0.0),
-                PlanetType::DesertPlanet,
-                false
-            ),
-            gen_planet(
-                &level_assets,
-                &ui_assets,
-                Vec2::new(LVL6X * 0.1, YMAX / 2.0),
-                PlanetType::DesertPlanet,
-                false
-            ),
-            gen_planet(
-                &level_assets,
-                &ui_assets,
-                Vec2::new(LVL6X * 0.1, -YMAX / 2.0),
-                PlanetType::PurplePlanet,
-                false
-            ),
-            gen_planet(
-                &level_assets,
-                &ui_assets,
-                Vec2::new(LVL7X * 0.1, 0.0),
-                PlanetType::EarthPlanet,
-                false
-            ),
-            gen_flagship(&entity_assets),
-        ],
-    ));
+    commands
+        .spawn((
+            Name::new("Level"),
+            Transform::from_xyz(0.0, 0.0, 0.0),
+            Visibility::default(),
+            StateScoped(Screen::Gameplay),
+            children![
+                gen_player(400.0, &player_assets),
+                gen_planet(
+                    &level_assets,
+                    &ui_assets,
+                    Vec2::new(LVL1X * 0.1, 128.0),
+                    PlanetType::LavaPlanet,
+                    false
+                ),
+                gen_planet(
+                    &level_assets,
+                    &ui_assets,
+                    Vec2::new(LVL2X * 0.1, YMAX / 25.0),
+                    PlanetType::GreenPlanet,
+                    false
+                ),
+                gen_planet(
+                    &level_assets,
+                    &ui_assets,
+                    Vec2::new(LVL2X * 0.1, -YMAX / 25.0),
+                    PlanetType::DesertPlanet,
+                    false
+                ),
+                gen_planet(
+                    &level_assets,
+                    &ui_assets,
+                    Vec2::new(LVL3X * 0.1, 0.0),
+                    PlanetType::SpaceStation,
+                    false
+                ),
+                gen_planet(
+                    &level_assets,
+                    &ui_assets,
+                    Vec2::new(LVL4X * 0.1, YMAX / 25.0),
+                    PlanetType::WaterPlanet,
+                    false
+                ),
+                gen_planet(
+                    &level_assets,
+                    &ui_assets,
+                    Vec2::new(LVL4X * 0.1, -YMAX / 25.0),
+                    PlanetType::IcePlanet,
+                    false
+                ),
+                gen_planet(
+                    &level_assets,
+                    &ui_assets,
+                    Vec2::new(LVL5X * 0.1, 0.0),
+                    PlanetType::HollowPlanet,
+                    false
+                ),
+                gen_planet(
+                    &level_assets,
+                    &ui_assets,
+                    Vec2::new(LVL6X * 0.1, YMAX / 25.0),
+                    PlanetType::GrayPlanet,
+                    false
+                ),
+                gen_planet(
+                    &level_assets,
+                    &ui_assets,
+                    Vec2::new(LVL6X * 0.1, -YMAX / 25.0),
+                    PlanetType::PurplePlanet,
+                    false
+                ),
+                gen_planet(
+                    &level_assets,
+                    &ui_assets,
+                    Vec2::new(95000.0 * 0.1, 0.0),
+                    PlanetType::EarthPlanet,
+                    false
+                ),
+            ],
+        ))
+        .with_children(|level| {
+            level
+                .spawn(gen_flagship(&entity_assets))
+                .with_children(|flagship| {
+                    flagship.spawn((
+                        Transform::from_translation(Vec3::new(0.0, 16.0, 0.0)),
+                        EvilLaser::flagship(),
+                        RayCaster::new(Vec2 { x: 0.0, y: 0.0 }, Dir2::Y)
+                            .with_max_distance(4000.0)
+                            .with_max_hits(100)
+                            .with_solidness(false),
+                    ));
+                });
+        });
+
     commands.spawn(gen_ui(&ui_assets));
 }
 
@@ -260,6 +279,7 @@ pub enum PlanetType {
     WaterPlanet,
     DesertPlanet,
     PurplePlanet,
+    IcePlanet,
     GrayPlanet,
     HollowPlanet,
     SpaceStation,
@@ -301,6 +321,7 @@ pub fn gen_planet(
                 PlanetType::PurplePlanet => assets.planet7.clone(),
                 PlanetType::SpaceStation => assets.planet8.clone(),
                 PlanetType::HollowPlanet => assets.planet9.clone(),
+                PlanetType::IcePlanet => assets.planet10.clone(),
             },
             custom_size: Some(Vec2 { x: 512.0, y: 512.0 }),
             ..default()
@@ -573,8 +594,9 @@ pub fn world_update(
     }
 
     //Mini-map
-    mini_map_enemy.width = Val::Percent(flagship.translation.x / LVL7X * 100.0);
-    mini_map_pos.left = Val::Percent(player.translation.x / LVL7X * 100.0);
+    let redzone = flagship.translation.x / LVL7X * 100.0;
+    mini_map_enemy.width = Val::Percent(redzone);
+    mini_map_pos.left = Val::Percent(player.translation.x / LVL7X * 100.0 - redzone);
     mini_map_pos.top = Val::Percent(45.0 - player.translation.y / YMAX * 100.0);
 
     //mini_map[0].Node.width = Val::Percent(10.0);
@@ -603,12 +625,39 @@ pub fn world_update(
         spawn_enemy(
             commands,
             entity_assets,
-            10,
+            20,
             ShipType::Rammer,
             player.translation,
             SpawnPatterns::Circle,
         );
     } else if player.translation.x < LVL3X {
+        spawn_enemy(
+            commands,
+            entity_assets,
+            20,
+            ShipType::Asteroid,
+            player.translation,
+            SpawnPatterns::Circle,
+        );
+    } else if player.translation.x < LVL4X {
+        spawn_enemy(
+            commands,
+            entity_assets,
+            15,
+            ShipType::Asteroid,
+            player.translation,
+            SpawnPatterns::Circle,
+        );
+    } else if player.translation.x < LVL5X {
+        spawn_enemy(
+            commands,
+            entity_assets,
+            10,
+            ShipType::Asteroid,
+            player.translation,
+            SpawnPatterns::Circle,
+        );
+    } else if player.translation.x < LVL6X {
         spawn_enemy(
             commands,
             entity_assets,
