@@ -12,7 +12,7 @@ use crate::{
     screens::{
         gameplay::{
             animation::{AnimatedSprite, AnimationType},
-            enemies::Enemy,
+            enemies::{ContinuosDamage, Enemy},
             player::Player,
             GameplayLogic,
         },
@@ -26,7 +26,7 @@ use super::Damage;
 pub fn plugin(app: &mut App) {
     app.register_type::<WeaponAssets>();
     app.load_resource::<WeaponAssets>();
-    app.add_systems(Update, fire_cannon.in_set(GameplayLogic));
+    app.add_systems(Update, (fire_cannon, rotate_orbs).in_set(GameplayLogic));
     app.add_systems(
         Update,
         (fire_laser, animate_laser).chain().in_set(GameplayLogic),
@@ -60,6 +60,14 @@ pub struct WeaponAssets {
     #[dependency]
     pub laser_hit: Handle<Image>,
     pub laser_hit_layout: Handle<TextureAtlasLayout>,
+
+    #[dependency]
+    pub laser_muzzle: Handle<Image>,
+    pub laser_muzzle_layout: Handle<TextureAtlasLayout>,
+
+    #[dependency]
+    orb: Handle<Image>,
+    orb_layout: Handle<TextureAtlasLayout>,
 }
 
 impl WeaponAssets {
@@ -82,6 +90,7 @@ impl WeaponAssets {
                     layout: self.laser_hit_layout.clone(),
                     index: 0,
                 }),
+                custom_size: Some(Vec2::new(32.0, 32.0)),
                 ..default()
             },
             AnimatedSprite::new(30, 16, AnimationType::Repeating),
@@ -147,6 +156,23 @@ impl FromWorld for WeaponAssets {
             laser_hit_layout: assets.add(TextureAtlasLayout::from_grid(
                 UVec2::splat(128),
                 4,
+                4,
+                None,
+                None,
+            )),
+            laser_muzzle: assets
+                .load_with_settings("VFX/Flipbooks/TFlip_LaserSpray.png", make_nearest),
+            laser_muzzle_layout: assets.add(TextureAtlasLayout::from_grid(
+                UVec2::splat(86),
+                6,
+                6,
+                None,
+                None,
+            )),
+            orb: assets.load_with_settings("VFX/Flipbooks/TFlip_OrbitingOrb.png", make_nearest),
+            orb_layout: assets.add(TextureAtlasLayout::from_grid(
+                UVec2::splat(64),
+                4, //Width
                 4,
                 None,
                 None,
@@ -244,11 +270,14 @@ pub fn spawn_e_field(assets: &Res<WeaponAssets>, n: usize) -> Vec<impl Bundle> {
             },
         },
         CollisionEventsEnabled,
-        Collider::circle(radius / 2.0),
-        RigidBody::Static,
+        ContinuosDamage {
+            damage_per_frame: n * 10,
+        },
+        Collider::circle(radius / 2.4),
         AnimatedSprite::new(30, 15, AnimationType::Repeating),
         Transform::from_xyz(0.0, 0.0, -0.2),
         EField,
+        Sensor,
     ));
 
     fields
@@ -258,6 +287,7 @@ pub fn spawn_e_field(assets: &Res<WeaponAssets>, n: usize) -> Vec<impl Bundle> {
 pub struct Laser {
     firing: bool,
     level: usize,
+    damage: usize,
     fire: Duration,
     cooldown: Duration,
     timer: Timer,
@@ -329,8 +359,8 @@ pub fn fire_cannon(
             .observe(
                 |trigger: Trigger<OnCollisionStart>,
                  mut commands: Commands,
-                 player: Single<Entity, With<Player>>| {
-                    if trigger.collider == player.into_inner() {
+                 enemies: Query<Entity, With<Enemy>>| {
+                    if !enemies.contains(trigger.collider) {
                         return;
                     }
                     commands.trigger_targets(Damage(50), trigger.collider);
@@ -356,7 +386,7 @@ pub fn fire_cannon(
     }
 }
 
-const LASER_FIRE_TIME: u64 = 6000;
+const LASER_FIRE_TIME: u64 = 2000;
 const LASER_COOLDOWN_TIME: u64 = 4000;
 
 impl Laser {
@@ -380,7 +410,7 @@ impl Laser {
 }
 
 pub fn spawn_laser(level: usize) -> impl Bundle {
-    let fire = Duration::from_millis(LASER_FIRE_TIME);
+    let fire = Duration::from_millis(LASER_FIRE_TIME * level as u64);
     let cooldown = Duration::from_millis(LASER_COOLDOWN_TIME);
 
     (
@@ -389,6 +419,7 @@ pub fn spawn_laser(level: usize) -> impl Bundle {
             firing: true,
             level,
             fire,
+            damage: 100,
             cooldown,
             timer: Timer::new(fire, TimerMode::Once),
         },
@@ -410,6 +441,7 @@ struct LaserHit;
 fn animate_laser(
     beams: Query<(&mut Sprite, &LaserBeam, &Children)>,
     mut hit: Query<&mut Transform, With<LaserHit>>,
+    mut collider: Query<(&mut Transform, &mut Collider), Without<LaserHit>>,
 ) {
     for (mut sprite, beam, children) in beams {
         let Some(rect) = sprite.rect.as_mut() else {
@@ -418,12 +450,19 @@ fn animate_laser(
         rect.min.x -= 2.0;
         rect.max.x -= 2.0;
 
-        sprite.custom_size.as_mut().unwrap().x = dbg!(beam.len);
+        sprite.custom_size.as_mut().unwrap().x = beam.len / 2.0;
 
         let Ok(mut hit) = hit.get_mut(children[1]) else {
             continue;
         };
-        hit.translation.y = beam.len;
+        hit.translation.x = beam.len / 2.0;
+
+        let Ok(mut collider) = collider.get_mut(children[0]) else {
+            continue;
+        };
+
+        collider.0.translation = Vec3::new(beam.len / 4.0, 0.0, 0.0);
+        *collider.1 = Collider::rectangle(beam.len, 32.0);
     }
 }
 
@@ -432,6 +471,7 @@ fn fire_laser(
     mut commands: Commands,
     assets: Res<WeaponAssets>,
     lasers: Query<(Entity, &mut Laser, &RayHits, &RayCaster, Option<&Children>)>,
+    enemies: Query<Entity, With<Enemy>>,
     mut laser_sprite: Query<&mut LaserBeam>,
 ) {
     for (laser_ent_id, mut laser, ray_hits, raycaster, children) in lasers {
@@ -440,7 +480,7 @@ fn fire_laser(
 
         let closest_hit = match ray_hits
             .iter_sorted()
-            .find(|hit| hit.entity != laser_ent_id)
+            .find(|hit| enemies.contains(hit.entity))
         {
             Some(hit) => hit.distance,
             None => raycaster.max_distance,
@@ -472,22 +512,40 @@ fn fire_laser(
                                 ..default()
                             },
                             LaserBeam { len: closest_hit },
-                            children![],
                         ))
-                        .with_children(|laser| {
-                            laser.spawn((
-                                Transform::from_xyz(0.0, closest_hit / 2.0, 0.0),
-                                RigidBody::Static,
-                                Collider::rectangle(32.0, closest_hit),
+                        .with_children(|laser_sprite| {
+                            laser_sprite.spawn((
+                                Transform::from_xyz(closest_hit / 2.0 / 2.0, 0.0, 0.0),
+                                Collider::rectangle(closest_hit, 32.0),
                                 CollisionEventsEnabled,
+                                ContinuosDamage {
+                                    damage_per_frame: laser.damage,
+                                },
                                 Sensor,
                             ));
-                            laser.spawn((
-                                Transform::from_xyz(0.0, closest_hit, 0.0),
+                            laser_sprite.spawn((
+                                Transform::from_xyz(closest_hit, 0.0, 0.0),
                                 assets.get_laser_hit(),
                                 LaserHit,
                             ));
                         });
+
+                    //Laser muzzle
+                    parent.spawn((
+                        Sprite {
+                            image: assets.laser_muzzle.clone(),
+                            custom_size: Some(Vec2 { x: 32.0, y: 32.0 }),
+                            texture_atlas: Some(TextureAtlas {
+                                layout: assets.laser_muzzle_layout.clone(),
+                                index: 0,
+                            }),
+                            ..default()
+                        },
+                        StateScoped(Screen::Gameplay),
+                        //Transform::from_rotation(Quat::from_rotation_z(0.0)),
+                        Transform::from_xyz(0.0, 2.0, 0.0),
+                        AnimatedSprite::new(15, 9, AnimationType::Repeating),
+                    ));
                 });
                 continue;
             }
@@ -499,4 +557,62 @@ fn fire_laser(
         };
         beam.len = closest_hit;
     }
+}
+
+#[derive(Component)]
+struct Orbiters {
+    orbit_speed: f32,
+    current_location: f32,
+}
+
+fn rotate_orbs(
+    orbs: Query<(&mut Transform, &mut Orbiters), Without<Player>>,
+    player: Single<&Transform, With<Player>>,
+) {
+    for (mut orb_container, mut params) in orbs {
+        params.current_location += PI / 180.0 * params.orbit_speed;
+
+        orb_container.rotation =
+            player.rotation.inverse() * Quat::from_rotation_z(params.current_location);
+    }
+}
+
+pub fn spawn_orbiters(n: usize, assets: &Res<WeaponAssets>) -> (impl Bundle, Vec<impl Bundle>) {
+    let angle_per_orbiter = 2.0 * PI / n as f32;
+
+    let mut orbiters = vec![];
+
+    for i in 0..n {
+        orbiters.push((
+            Transform::from_translation(
+                Quat::from_rotation_z(angle_per_orbiter * i as f32) * Vec3::new(200.0, 0.0, 0.0),
+            ),
+            Sprite {
+                image: assets.orb.clone(),
+                texture_atlas: Some(TextureAtlas {
+                    layout: assets.orb_layout.clone(),
+                    index: 0,
+                }),
+                ..default()
+            },
+            AnimatedSprite::new(30, 16, AnimationType::Repeating),
+            Collider::circle(10.0),
+            ContinuosDamage {
+                damage_per_frame: 20,
+            },
+            CollisionEventsEnabled,
+            Sensor,
+        ))
+    }
+
+    (
+        (
+            Transform::default(),
+            Orbiters {
+                orbit_speed: n as f32,
+                current_location: 0.0,
+            },
+        ),
+        orbiters,
+    )
 }
