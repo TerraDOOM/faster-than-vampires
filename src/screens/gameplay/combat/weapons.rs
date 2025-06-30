@@ -82,6 +82,7 @@ impl WeaponAssets {
                     layout: self.laser_hit_layout.clone(),
                     index: 0,
                 }),
+                custom_size: Some(Vec2::new(32.0, 32.0)),
                 ..default()
             },
             AnimatedSprite::new(30, 16, AnimationType::Repeating),
@@ -332,8 +333,8 @@ pub fn fire_cannon(
             .observe(
                 |trigger: Trigger<OnCollisionStart>,
                  mut commands: Commands,
-                 player: Single<Entity, With<Player>>| {
-                    if trigger.collider == player.into_inner() {
+                 enemies: Query<Entity, With<Enemy>>| {
+                    if !enemies.contains(trigger.collider) {
                         return;
                     }
                     commands.trigger_targets(Damage(50), trigger.collider);
@@ -413,6 +414,7 @@ struct LaserHit;
 fn animate_laser(
     beams: Query<(&mut Sprite, &LaserBeam, &Children)>,
     mut hit: Query<&mut Transform, With<LaserHit>>,
+    mut collider: Query<(&mut Transform, &mut Collider), Without<LaserHit>>,
 ) {
     for (mut sprite, beam, children) in beams {
         let Some(rect) = sprite.rect.as_mut() else {
@@ -421,12 +423,19 @@ fn animate_laser(
         rect.min.x -= 2.0;
         rect.max.x -= 2.0;
 
-        sprite.custom_size.as_mut().unwrap().x = dbg!(beam.len);
+        sprite.custom_size.as_mut().unwrap().x = beam.len / 2.0;
 
         let Ok(mut hit) = hit.get_mut(children[1]) else {
             continue;
         };
-        hit.translation.y = beam.len;
+        hit.translation.x = beam.len / 2.0;
+
+        let Ok(mut collider) = collider.get_mut(children[0]) else {
+            continue;
+        };
+
+        collider.0.translation = Vec3::new(beam.len / 4.0, 0.0, 0.0);
+        *collider.1 = Collider::rectangle(beam.len, 32.0);
     }
 }
 
@@ -435,6 +444,7 @@ fn fire_laser(
     mut commands: Commands,
     assets: Res<WeaponAssets>,
     lasers: Query<(Entity, &mut Laser, &RayHits, &RayCaster, Option<&Children>)>,
+    enemies: Query<Entity, With<Enemy>>,
     mut laser_sprite: Query<&mut LaserBeam>,
 ) {
     for (laser_ent_id, mut laser, ray_hits, raycaster, children) in lasers {
@@ -443,7 +453,7 @@ fn fire_laser(
 
         let closest_hit = match ray_hits
             .iter_sorted()
-            .find(|hit| hit.entity != laser_ent_id)
+            .find(|hit| enemies.contains(hit.entity))
         {
             Some(hit) => hit.distance,
             None => raycaster.max_distance,
@@ -475,18 +485,16 @@ fn fire_laser(
                                 ..default()
                             },
                             LaserBeam { len: closest_hit },
-                            children![],
                         ))
-                        .with_children(|laser| {
-                            laser.spawn((
-                                Transform::from_xyz(0.0, closest_hit / 2.0, 0.0),
-                                RigidBody::Static,
-                                Collider::rectangle(32.0, closest_hit),
+                        .with_children(|laser_sprite| {
+                            laser_sprite.spawn((
+                                Transform::from_xyz(closest_hit / 2.0 / 2.0, 0.0, 0.0),
+                                Collider::rectangle(closest_hit, 32.0),
                                 CollisionEventsEnabled,
                                 Sensor,
                             ));
-                            laser.spawn((
-                                Transform::from_xyz(0.0, closest_hit, 0.0),
+                            laser_sprite.spawn((
+                                Transform::from_xyz(closest_hit, 0.0, 0.0),
                                 assets.get_laser_hit(),
                                 LaserHit,
                             ));
