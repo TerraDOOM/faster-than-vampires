@@ -6,7 +6,7 @@ use std::collections::{HashMap, HashSet};
 use crate::menus::Menu;
 
 use super::{
-    combat::weapons::WeaponAssets,
+    combat::weapons::{self, WeaponAssets},
     level::{PlanetType, UIAssets, VisistedPlanet},
     player::Player,
     GameplayLogic,
@@ -28,8 +28,8 @@ pub(super) fn plugin(app: &mut App) {
             *upgrades
                 .into_inner()
                 .gotten_upgrades
-                .get_mut(&UpgradeTypes::Cannon)
-                .unwrap() += 1;
+                .entry(UpgradeTypes::Laser)
+                .or_insert(0) += 1;
         })
         .run_if(input_just_pressed(KeyCode::Space))
         .in_set(GameplayLogic),
@@ -71,7 +71,7 @@ pub fn update_upgrades(
     let mut player = commands.get_entity(ent).unwrap();
     player.despawn_related::<Children>();
 
-    let cannons = super::combat::weapons::spawn_cannons(
+    let cannons = weapons::spawn_cannons(
         &weapon_assets.cannon,
         upgrades
             .gotten_upgrades
@@ -79,9 +79,19 @@ pub fn update_upgrades(
             .cloned()
             .unwrap_or(0),
     );
-    player.with_children(|commands| {
+    let laser = upgrades
+        .gotten_upgrades
+        .get(&UpgradeTypes::Laser)
+        .cloned()
+        .unwrap_or(0);
+
+    player.with_children(|parent| {
         for cannon in cannons {
-            commands.spawn(cannon);
+            parent.spawn(cannon);
+        }
+
+        if laser > 0 {
+            parent.spawn(weapons::spawn_laser(laser));
         }
     });
 

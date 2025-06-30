@@ -1,7 +1,11 @@
-use std::time::Duration;
+use std::{f32::consts::PI, time::Duration};
 
 use avian2d::prelude::*;
-use bevy::prelude::*;
+use bevy::{
+    image::{ImageLoaderSettings, ImageSampler, ImageSamplerDescriptor},
+    prelude::*,
+    sprite::Anchor,
+};
 
 use crate::{
     asset_tracking::LoadResource,
@@ -14,6 +18,7 @@ use crate::{
         },
         Screen,
     },
+    util::make_nearest,
 };
 
 use super::Damage;
@@ -22,6 +27,11 @@ pub fn plugin(app: &mut App) {
     app.register_type::<WeaponAssets>();
     app.load_resource::<WeaponAssets>();
     app.add_systems(Update, fire_cannon.in_set(GameplayLogic));
+    app.add_systems(
+        Update,
+        (fire_laser, animate_laser).chain().in_set(GameplayLogic),
+    );
+    app.add_plugins((PhysicsDebugPlugin::default(),));
 }
 
 #[derive(Resource, Asset, Clone, Reflect)]
@@ -44,6 +54,12 @@ pub struct WeaponAssets {
     #[dependency]
     pub muzzle_flash: Handle<Image>,
     pub muzzle_flash_layout: Handle<TextureAtlasLayout>,
+
+    #[dependency]
+    pub laser_beam: Handle<Image>,
+    #[dependency]
+    pub laser_hit: Handle<Image>,
+    pub laser_hit_layout: Handle<TextureAtlasLayout>,
 }
 
 impl WeaponAssets {
@@ -56,6 +72,20 @@ impl WeaponAssets {
             }),
             ..default()
         }
+    }
+
+    fn get_laser_hit(&self) -> impl Bundle {
+        (
+            Sprite {
+                image: self.laser_hit.clone(),
+                texture_atlas: Some(TextureAtlas {
+                    layout: self.laser_hit_layout.clone(),
+                    index: 0,
+                }),
+                ..default()
+            },
+            AnimatedSprite::new(30, 16, AnimationType::Repeating),
+        )
     }
 }
 
@@ -97,6 +127,26 @@ impl FromWorld for WeaponAssets {
             e_field_big_layout: assets.add(TextureAtlasLayout::from_grid(
                 UVec2::splat(128),
                 4, //Width
+                4,
+                None,
+                None,
+            )),
+
+            laser_beam: assets.load_with_settings(
+                "VFX/Other/T_TilingLaserBeam.png",
+                |settings: &mut ImageLoaderSettings| {
+                    settings.sampler = ImageSampler::Descriptor(ImageSamplerDescriptor {
+                        address_mode_u: bevy::image::ImageAddressMode::Repeat,
+                        address_mode_v: bevy::image::ImageAddressMode::ClampToEdge,
+                        ..ImageSamplerDescriptor::nearest()
+                    })
+                },
+            ),
+            laser_hit: assets
+                .load_with_settings("VFX/Flipbooks/TFlip_LaserBeamImpact.png", make_nearest),
+            laser_hit_layout: assets.add(TextureAtlasLayout::from_grid(
+                UVec2::splat(128),
+                4,
                 4,
                 None,
                 None,
@@ -306,8 +356,156 @@ pub fn fire_cannon(
     }
 }
 
-fn spawn_laser() {}
+#[derive(Component)]
+pub struct Laser {
+    firing: bool,
+    level: usize,
+    fire: Duration,
+    cooldown: Duration,
+    timer: Timer,
+}
 
-fn fire_laser(laser: Query<(&GlobalTransform, &Laser, &RayCaster)>) {
-    for (transform, laser, raycaster) in laser {}
+const LASER_FIRE_TIME: u64 = 6000;
+const LASER_COOLDOWN_TIME: u64 = 4000;
+
+impl Laser {
+    fn update_timer(&mut self, delta: Duration) {
+        self.timer.tick(delta);
+
+        let just_finished = self.timer.just_finished();
+        if just_finished {
+            self.firing = !self.firing;
+
+            self.timer.reset();
+
+            self.timer
+                .set_duration(Duration::from_millis(if self.firing {
+                    LASER_FIRE_TIME
+                } else {
+                    LASER_COOLDOWN_TIME
+                }));
+        }
+    }
+}
+
+pub fn spawn_laser(level: usize) -> impl Bundle {
+    let fire = Duration::from_millis(LASER_FIRE_TIME);
+    let cooldown = Duration::from_millis(LASER_COOLDOWN_TIME);
+
+    (
+        Transform::from_translation(Vec3::new(0.0, 16.0, 0.0)),
+        Laser {
+            firing: true,
+            level,
+            fire,
+            cooldown,
+            timer: Timer::new(fire, TimerMode::Once),
+        },
+        RayCaster::new(Vec2 { x: 0.0, y: 0.0 }, Dir2::Y)
+            .with_max_distance(4000.0)
+            .with_max_hits(100)
+            .with_solidness(false),
+    )
+}
+
+#[derive(Component)]
+struct LaserBeam {
+    len: f32,
+}
+
+#[derive(Component)]
+struct LaserHit;
+
+fn animate_laser(
+    beams: Query<(&mut Sprite, &LaserBeam, &Children)>,
+    mut hit: Query<&mut Transform, With<LaserHit>>,
+) {
+    for (mut sprite, beam, children) in beams {
+        let Some(rect) = sprite.rect.as_mut() else {
+            continue;
+        };
+        rect.min.x -= 2.0;
+        rect.max.x -= 2.0;
+
+        sprite.custom_size.as_mut().unwrap().x = dbg!(beam.len);
+
+        let Ok(mut hit) = hit.get_mut(children[1]) else {
+            continue;
+        };
+        hit.translation.y = beam.len;
+    }
+}
+
+fn fire_laser(
+    timer: Res<Time>,
+    mut commands: Commands,
+    assets: Res<WeaponAssets>,
+    lasers: Query<(Entity, &mut Laser, &RayHits, &RayCaster, Option<&Children>)>,
+    mut laser_sprite: Query<&mut LaserBeam>,
+) {
+    for (laser_ent_id, mut laser, ray_hits, raycaster, children) in lasers {
+        laser.update_timer(timer.delta());
+        let mut laser_ent = commands.entity(laser_ent_id);
+
+        let closest_hit = match ray_hits
+            .iter_sorted()
+            .find(|hit| hit.entity != laser_ent_id)
+        {
+            Some(hit) => hit.distance,
+            None => raycaster.max_distance,
+        };
+
+        if !laser.firing {
+            laser_ent.despawn_related::<Children>();
+            continue;
+        } else {
+            // spawn in the laser
+            if children.is_none_or(|x| x.is_empty()) {
+                laser_ent.with_children(|parent| {
+                    parent
+                        .spawn((
+                            Transform::from_rotation(Quat::from_rotation_z(PI / 2.0)),
+                            Sprite {
+                                custom_size: Some(Vec2::new(closest_hit, 32.0)),
+                                image: assets.laser_beam.clone(),
+                                rect: Some(Rect {
+                                    min: Vec2::ZERO,
+                                    max: Vec2::splat(128.0),
+                                }),
+                                image_mode: SpriteImageMode::Tiled {
+                                    tile_x: true,
+                                    tile_y: false,
+                                    stretch_value: 3.0,
+                                },
+                                anchor: Anchor::CenterLeft,
+                                ..default()
+                            },
+                            LaserBeam { len: closest_hit },
+                            children![],
+                        ))
+                        .with_children(|laser| {
+                            laser.spawn((
+                                Transform::from_xyz(0.0, closest_hit / 2.0, 0.0),
+                                RigidBody::Static,
+                                Collider::rectangle(32.0, closest_hit),
+                                CollisionEventsEnabled,
+                                Sensor,
+                            ));
+                            laser.spawn((
+                                Transform::from_xyz(0.0, closest_hit, 0.0),
+                                assets.get_laser_hit(),
+                                LaserHit,
+                            ));
+                        });
+                });
+                continue;
+            }
+        }
+        let Some(children) = children else { continue };
+        // change the current laser
+        let Ok(mut beam) = laser_sprite.get_mut(children[0]) else {
+            continue;
+        };
+        beam.len = closest_hit;
+    }
 }
