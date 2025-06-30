@@ -26,7 +26,7 @@ use super::Damage;
 pub fn plugin(app: &mut App) {
     app.register_type::<WeaponAssets>();
     app.load_resource::<WeaponAssets>();
-    app.add_systems(Update, fire_cannon.in_set(GameplayLogic));
+    app.add_systems(Update, (fire_cannon, rotate_orbs).in_set(GameplayLogic));
     app.add_systems(
         Update,
         (fire_laser, animate_laser).chain().in_set(GameplayLogic),
@@ -60,9 +60,14 @@ pub struct WeaponAssets {
     #[dependency]
     pub laser_hit: Handle<Image>,
     pub laser_hit_layout: Handle<TextureAtlasLayout>,
+
     #[dependency]
     pub laser_muzzle: Handle<Image>,
     pub laser_muzzle_layout: Handle<TextureAtlasLayout>,
+
+    #[dependency]
+    orb: Handle<Image>,
+    orb_layout: Handle<TextureAtlasLayout>,
 }
 
 impl WeaponAssets {
@@ -161,6 +166,14 @@ impl FromWorld for WeaponAssets {
                 UVec2::splat(86),
                 6,
                 6,
+                None,
+                None,
+            )),
+            orb: assets.load_with_settings("VFX/Flipbooks/TFlip_OrbitingOrb.png", make_nearest),
+            orb_layout: assets.add(TextureAtlasLayout::from_grid(
+                UVec2::splat(64),
+                4, //Width
+                4,
                 None,
                 None,
             )),
@@ -544,4 +557,62 @@ fn fire_laser(
         };
         beam.len = closest_hit;
     }
+}
+
+#[derive(Component)]
+struct Orbiters {
+    orbit_speed: f32,
+    current_location: f32,
+}
+
+fn rotate_orbs(
+    orbs: Query<(&mut Transform, &mut Orbiters), Without<Player>>,
+    player: Single<&Transform, With<Player>>,
+) {
+    for (mut orb_container, mut params) in orbs {
+        params.current_location += PI / 180.0 * params.orbit_speed;
+
+        orb_container.rotation =
+            player.rotation.inverse() * Quat::from_rotation_z(params.current_location);
+    }
+}
+
+pub fn spawn_orbiters(n: usize, assets: &Res<WeaponAssets>) -> (impl Bundle, Vec<impl Bundle>) {
+    let angle_per_orbiter = 2.0 * PI / n as f32;
+
+    let mut orbiters = vec![];
+
+    for i in 0..n {
+        orbiters.push((
+            Transform::from_translation(
+                Quat::from_rotation_z(angle_per_orbiter * i as f32) * Vec3::new(200.0, 0.0, 0.0),
+            ),
+            Sprite {
+                image: assets.orb.clone(),
+                texture_atlas: Some(TextureAtlas {
+                    layout: assets.orb_layout.clone(),
+                    index: 0,
+                }),
+                ..default()
+            },
+            AnimatedSprite::new(30, 16, AnimationType::Repeating),
+            Collider::circle(10.0),
+            ContinuosDamage {
+                damage_per_frame: 20,
+            },
+            CollisionEventsEnabled,
+            Sensor,
+        ))
+    }
+
+    (
+        (
+            Transform::default(),
+            Orbiters {
+                orbit_speed: n as f32,
+                current_location: 0.0,
+            },
+        ),
+        orbiters,
+    )
 }
