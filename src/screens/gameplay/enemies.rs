@@ -350,7 +350,7 @@ impl FromWorld for EntityAssets {
         use crate::util::make_nearest;
         let assets = world.resource::<AssetServer>();
         Self {
-            flagship: assets.load_with_settings("images/entities/Flagship-old.png", make_nearest),
+            flagship: assets.load_with_settings("images/entities/Flagship.png", make_nearest),
             empire_goon: assets.load_with_settings("images/entities/Enemy1.png", make_nearest),
             pirate_ship: assets.load_with_settings("images/entities/Enemy2.png", make_nearest),
             outpost: assets.load_with_settings("images/mascot.png", make_nearest),
