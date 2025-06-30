@@ -105,7 +105,7 @@ impl FromWorld for LevelAssets {
         use crate::util::make_nearest;
         let assets = world.resource::<AssetServer>();
         Self {
-            music: assets.load("audio/music/Fluffing A Duck.ogg"),
+            music: assets.load("audio/music/Orbital fight.ogg"),
             background: assets.load_with_settings("images/level/background.png", make_nearest),
             planet1: assets.load_with_settings("images/level/Planet1.png", make_nearest),
             planet2: assets.load_with_settings("images/level/Planet2.png", make_nearest),

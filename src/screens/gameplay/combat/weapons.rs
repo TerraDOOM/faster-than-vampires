@@ -60,6 +60,9 @@ pub struct WeaponAssets {
     #[dependency]
     pub laser_hit: Handle<Image>,
     pub laser_hit_layout: Handle<TextureAtlasLayout>,
+    #[dependency]
+    pub laser_muzzle: Handle<Image>,
+    pub laser_muzzle_layout: Handle<TextureAtlasLayout>,
 }
 
 impl WeaponAssets {
@@ -149,6 +152,15 @@ impl FromWorld for WeaponAssets {
                 UVec2::splat(128),
                 4,
                 4,
+                None,
+                None,
+            )),
+            laser_muzzle: assets
+                .load_with_settings("VFX/Flipbooks/TFlip_LaserSpray.png", make_nearest),
+            laser_muzzle_layout: assets.add(TextureAtlasLayout::from_grid(
+                UVec2::splat(86),
+                6,
+                6,
                 None,
                 None,
             )),
@@ -246,7 +258,7 @@ pub fn spawn_e_field(assets: &Res<WeaponAssets>, n: usize) -> Vec<impl Bundle> {
         },
         CollisionEventsEnabled,
         ContinuosDamage {
-            damage_per_frame: 100,
+            damage_per_frame: 10,
         },
         Collider::circle(radius / 2.4),
         AnimatedSprite::new(30, 15, AnimationType::Repeating),
@@ -361,7 +373,7 @@ pub fn fire_cannon(
     }
 }
 
-const LASER_FIRE_TIME: u64 = 6000;
+const LASER_FIRE_TIME: u64 = 2000;
 const LASER_COOLDOWN_TIME: u64 = 4000;
 
 impl Laser {
@@ -385,7 +397,7 @@ impl Laser {
 }
 
 pub fn spawn_laser(level: usize) -> impl Bundle {
-    let fire = Duration::from_millis(LASER_FIRE_TIME);
+    let fire = Duration::from_millis(LASER_FIRE_TIME * level as u64);
     let cooldown = Duration::from_millis(LASER_COOLDOWN_TIME);
 
     (
@@ -504,6 +516,23 @@ fn fire_laser(
                                 LaserHit,
                             ));
                         });
+
+                    //Laser muzzle
+                    parent.spawn((
+                        Sprite {
+                            image: assets.laser_muzzle.clone(),
+                            custom_size: Some(Vec2 { x: 32.0, y: 32.0 }),
+                            texture_atlas: Some(TextureAtlas {
+                                layout: assets.laser_muzzle_layout.clone(),
+                                index: 0,
+                            }),
+                            ..default()
+                        },
+                        StateScoped(Screen::Gameplay),
+                        //Transform::from_rotation(Quat::from_rotation_z(0.0)),
+                        Transform::from_xyz(0.0, 2.0, 0.0),
+                        AnimatedSprite::new(15, 9, AnimationType::Repeating),
+                    ));
                 });
                 continue;
             }

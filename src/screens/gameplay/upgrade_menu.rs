@@ -7,7 +7,6 @@ use crate::menus::Menu;
 
 use super::{
     combat::weapons::{self, WeaponAssets},
-    enemies,
     level::{PlanetType, UIAssets, VisistedPlanet},
     player::Player,
     GameplayLogic,
@@ -80,6 +79,7 @@ pub fn update_upgrades(
             .cloned()
             .unwrap_or(0),
     );
+
     let laser = upgrades
         .gotten_upgrades
         .get(&UpgradeTypes::Laser)
@@ -123,13 +123,26 @@ pub fn draft_upgrades(
         .cloned()
         .collect::<Vec<UpgradeTypes>>();
 
+    // let banned_upgrade: &HashSet;
+
+    // if owned_upgrades.get(UpgradeTypes::Cannon).is_some() {
+    //     if owned_upgrades.get(UpgradeTypes::Cannon).unwrap() > 2 {
+    //         banned_upgrade.insert(UpgradeTypes::Cannon);
+    //     }
+    // }
+
     let all_upgrades: HashSet<_> = UpgradeTypes::all_upgrades().into_iter().collect();
     let non_owned: Vec<UpgradeTypes> = all_upgrades
         .difference(&HashSet::from_iter(owned_upgrades.iter().cloned()))
         .cloned()
         .collect();
-
     let mut non_owned = non_owned.into_iter().collect::<Vec<UpgradeTypes>>();
+
+    // let owned_allowed: Vec<UpgradeTypes> = banned_upgrade
+    //     .difference(&HashSet::from_iter(owned_upgrades.iter().cloned()))
+    //     .cloned()
+    //     .collect();
+    //let mut owned_allowed = non_owned.into_iter().collect::<Vec<UpgradeTypes>>();
 
     let upgrade1 = owned_upgrades.choose(&mut rng).unwrap();
     let upgrade2 = non_owned
