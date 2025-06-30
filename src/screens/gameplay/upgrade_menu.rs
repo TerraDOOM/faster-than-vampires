@@ -186,9 +186,39 @@ pub fn generate_buy_menu(
                         ..default()
                     },
                     children![
-                        gen_shop_item(&ui_assets, drafted_upgrades.0, 0, 1),
-                        gen_shop_item(&ui_assets, drafted_upgrades.1, 0, 2),
-                        gen_shop_item(&ui_assets, drafted_upgrades.2, 0, 3),
+                        gen_shop_item(
+                            &ui_assets,
+                            drafted_upgrades.0,
+                            *upgrades
+                                .gotten_upgrades
+                                .get(&drafted_upgrades.0)
+                                .or(Some(&(0 as usize)))
+                                .unwrap()
+                                + 1,
+                            1
+                        ),
+                        gen_shop_item(
+                            &ui_assets,
+                            drafted_upgrades.1,
+                            *upgrades
+                                .gotten_upgrades
+                                .get(&drafted_upgrades.1)
+                                .or(Some(&(0 as usize)))
+                                .unwrap()
+                                + 1,
+                            2
+                        ),
+                        gen_shop_item(
+                            &ui_assets,
+                            drafted_upgrades.2,
+                            *upgrades
+                                .gotten_upgrades
+                                .get(&drafted_upgrades.2)
+                                .or(Some(&(0 as usize)))
+                                .unwrap()
+                                + 1,
+                            3
+                        ),
                     ]
                 ))
             ],
@@ -216,7 +246,6 @@ pub fn gen_shop_item(
             ..default()
         },
         BackgroundColor(Color::srgb(0.5, 0.5, 0.5)),
-
         children![(
             //Title
             Node {
@@ -227,10 +256,11 @@ pub fn gen_shop_item(
                 ..default()
             },
             Text::new(match upgrade_type {
-                UpgradeTypes::Cannon => format!("Lvl.{} Cannon", upgrade_level+1),
-                UpgradeTypes::Thrusters => format!("Lvl.{} Thruster", upgrade_level+1),
+                UpgradeTypes::Cannon => format!("Lvl.{} Cannon", upgrade_level),
+                UpgradeTypes::Thrusters => format!("Lvl.{} Thruster", upgrade_level),
                 UpgradeTypes::Electricity  => format!("Lvl.{} HV-field", upgrade_level),
                 UpgradeTypes::Laser  => format!("Lvl.{} Photon canon", upgrade_level),
+                UpgradeTypes::Health  => format!("Lvl.{} Shield", upgrade_level),
                 _ => "unkown upgrade".to_string(),
             }),
             TextFont {

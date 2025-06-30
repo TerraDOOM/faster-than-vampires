@@ -34,8 +34,16 @@ pub struct WeaponAssets {
     pub cannon: Handle<Image>,
 
     #[dependency]
-    pub E_field: Handle<Image>,
-    pub E_field_layout: Handle<TextureAtlasLayout>,
+    pub e_field: Handle<Image>,
+    pub e_field_layout: Handle<TextureAtlasLayout>,
+
+    #[dependency]
+    pub e_field_big: Handle<Image>,
+    pub e_field_big_layout: Handle<TextureAtlasLayout>,
+
+    #[dependency]
+    pub muzzle_flash: Handle<Image>,
+    pub muzzle_flash_layout: Handle<TextureAtlasLayout>,
 }
 
 impl WeaponAssets {
@@ -65,10 +73,29 @@ impl FromWorld for WeaponAssets {
                 None,
                 None,
             )),
-            E_field: assets
+            muzzle_flash: assets.load_with_settings("VFX/Flipbooks/TFlip_Blast.png", make_nearest),
+            muzzle_flash_layout: assets.add(TextureAtlasLayout::from_grid(
+                UVec2::splat(86),
+                3, //Width
+                3,
+                None,
+                None,
+            )),
+            e_field: assets
                 .load_with_settings("VFX/Flipbooks/TFlip_ElectricShield.png", make_nearest),
-            E_field_layout: assets.add(TextureAtlasLayout::from_grid(
+            e_field_layout: assets.add(TextureAtlasLayout::from_grid(
                 UVec2::splat(64),
+                4, //Width
+                4,
+                None,
+                None,
+            )),
+            e_field_big: assets.load_with_settings(
+                "VFX/Flipbooks/TFlip_ElectricShield_Higher.png",
+                make_nearest,
+            ),
+            e_field_big_layout: assets.add(TextureAtlasLayout::from_grid(
+                UVec2::splat(128),
                 4, //Width
                 4,
                 None,
@@ -139,17 +166,32 @@ pub fn spawn_e_field(assets: &Res<WeaponAssets>, n: usize) -> Vec<impl Bundle> {
     let mut fields = Vec::new();
 
     fields.push((
-        Sprite {
-            image: assets.E_field.clone(),
-            custom_size: Some(Vec2 {
-                x: radius,
-                y: radius,
-            }),
-            texture_atlas: Some(TextureAtlas {
-                layout: assets.E_field_layout.clone(),
-                index: 0,
-            }),
-            ..default()
+        match n {
+            3 => Sprite {
+                image: assets.e_field_big.clone(),
+                custom_size: Some(Vec2 {
+                    x: radius,
+                    y: radius,
+                }),
+                texture_atlas: Some(TextureAtlas {
+                    layout: assets.e_field_big_layout.clone(),
+                    index: 0,
+                }),
+                ..default()
+            },
+
+            _ => Sprite {
+                image: assets.e_field.clone(),
+                custom_size: Some(Vec2 {
+                    x: radius,
+                    y: radius,
+                }),
+                texture_atlas: Some(TextureAtlas {
+                    layout: assets.e_field_layout.clone(),
+                    index: 0,
+                }),
+                ..default()
+            },
         },
         CollisionEventsEnabled,
         Collider::circle(radius / 2.0),
@@ -220,6 +262,7 @@ pub fn fire_cannon(
 
         let pos = global_transform.translation();
 
+        //Spawning bullet
         commands
             .spawn((
                 assets.get_laser_shot_sprite(),
@@ -244,6 +287,22 @@ pub fn fire_cannon(
                     commands.entity(trigger.target()).despawn();
                 },
             );
+
+        //Spawning muzzle flash
+        commands.spawn((
+            Sprite {
+                image: assets.muzzle_flash.clone(),
+                custom_size: Some(Vec2 { x: 86.0, y: 86.0 }),
+                texture_atlas: Some(TextureAtlas {
+                    layout: assets.muzzle_flash_layout.clone(),
+                    index: 0,
+                }),
+                ..default()
+            },
+            StateScoped(Screen::Gameplay),
+            Transform::from_translation(pos + dir * 20.0),
+            AnimatedSprite::new(15, 9, AnimationType::Once),
+        ));
     }
 }
 
