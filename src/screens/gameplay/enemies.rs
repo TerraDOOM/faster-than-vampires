@@ -113,15 +113,23 @@ pub fn gen_goon(assets: &EntityAssets, position: Vec2) -> impl Bundle {
 #[derive(Component, Debug, Copy, Clone, PartialEq, Eq)]
 pub struct FlagshipAI;
 pub fn gen_flagship(assets: &EntityAssets) -> impl Bundle {
+    let position = Vec2::new(-512.0, 0.0);
+
     let flagship = Ship {
         shiptype: ShipType::Flagship,
-        position: Vec2::new(-512.0, 0.0),
         lifetime: Instant::now(),
+        position,
         weapons: Vec::new(),
     };
 
     (
-        gen_enemy(flagship, assets, Vec2::ZERO),
+        gen_enemy_trans(
+            flagship,
+            assets,
+            Vec2::ZERO,
+            Transform::from_translation(position.extend(0.0))
+                .with_rotation(Quat::from_rotation_z(-PI / 2.0)),
+        ),
         FlagshipAI,
         ExternalImpulse::new(Vec2::ZERO),
         Mass(10.0),
