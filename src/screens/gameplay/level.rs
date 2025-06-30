@@ -417,7 +417,7 @@ pub fn gen_ui(ui_assets: &Res<UIAssets>) -> impl Bundle {
     (
         Name::new("UIBox"),
         UIBox,
-        BackgroundColor(Color::srgb(0.5, 0.5, 0.5)),
+        BackgroundColor(Color::srgb(0.3, 0.3, 0.3)),
         Node {
             width: Val::Percent(100.0),
             height: Val::Percent(15.0),
