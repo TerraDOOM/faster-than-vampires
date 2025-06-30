@@ -80,6 +80,9 @@ pub fn update_upgrades(
     mut hp: Single<&mut Health, With<Player>>,
     upgrades: Single<(Entity, &Upgrades), (With<Player>, Changed<Upgrades>)>,
 ) {
+    //Spawn music
+    commands.spawn((AudioPlayer::new(weapon_assets.exit_shop.clone()),));
+
     let (ent, upgrades) = upgrades.into_inner();
     let mut player = commands.get_entity(ent).unwrap();
     player.despawn_related::<Children>();
@@ -116,6 +119,7 @@ pub fn update_upgrades(
             .unwrap_or(0),
         &weapon_assets,
     );
+
     let hp_level = upgrades
         .gotten_upgrades
         .get(&UpgradeTypes::Health)
@@ -134,6 +138,13 @@ pub fn update_upgrades(
 
         for field in fields {
             parent.spawn(field);
+            parent.spawn((
+                AudioPlayer::new(weapon_assets.sfx_field.clone()),
+                PlaybackSettings {
+                    mode: bevy::audio::PlaybackMode::Loop,
+                    ..default()
+                },
+            ));
         }
 
         if orbs.len() > 0 {
@@ -142,6 +153,13 @@ pub fn update_upgrades(
                     cont.spawn(orb);
                 }
             });
+            parent.spawn((
+                AudioPlayer::new(weapon_assets.sfx_orb.clone()),
+                PlaybackSettings {
+                    mode: bevy::audio::PlaybackMode::Loop,
+                    ..default()
+                },
+            ));
         }
     });
 }
