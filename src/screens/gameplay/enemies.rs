@@ -86,7 +86,7 @@ pub fn gen_enemy_trans(
                 Sprite {
                     image: match ship.shiptype {
                         ShipType::EmpireGoon => assets.empire_goon.clone(),
-                        ShipType::PirateShip => assets.empire_goon.clone(),
+                        ShipType::PirateShip => assets.pirate_ship.clone(),
                         ShipType::Asteroid => assets.asteroid.clone(),
                         ShipType::Rammer => assets.ramming_ship.clone(),
                         _ => assets.empire_goon.clone(),
@@ -120,7 +120,7 @@ pub fn gen_goon(assets: &EntityAssets, position: Vec2) -> impl Bundle {
 #[derive(Component, Debug, Copy, Clone, PartialEq, Eq)]
 pub struct FlagshipAI;
 pub fn gen_flagship(assets: &EntityAssets) -> impl Bundle {
-    let position = Vec2::new(-512.0, 0.0);
+    let position = Vec2::new(-1080.0, 0.0);
 
     let flagship = Ship {
         shiptype: ShipType::Flagship,
@@ -177,7 +177,7 @@ pub fn process_flagship_ai(
             if angvel.0 > 0.1 {
                 angular_damping.0 = 10.0;
             } else {
-                force.apply_impulse(enemy_forward * 300.0);
+                force.apply_impulse(enemy_forward * 700.0);
             }
             continue;
         }
@@ -213,9 +213,14 @@ pub enum RammerAI {
     Aiming,
 }
 
-pub fn gen_rammer(assets: &EntityAssets, position: Vec2, init_velocity: Vec2) -> impl Bundle {
+pub fn gen_rammer(
+    assets: &EntityAssets,
+    position: Vec2,
+    init_velocity: Vec2,
+    ship_look: ShipType,
+) -> impl Bundle {
     let rammer = Ship {
-        shiptype: ShipType::Rammer,
+        shiptype: ship_look,
         position: position,
         lifetime: Instant::now(),
         weapons: Vec::new(),
@@ -351,10 +356,12 @@ impl FromWorld for EntityAssets {
             outpost: assets.load_with_settings("images/mascot.png", make_nearest),
             asteroid: assets.load_with_settings("images/entities/Astroid 1 .png", make_nearest),
             ramming_ship: assets.load_with_settings("images/entities/Enemy3.png", make_nearest),
-            explosion: assets
-                .load_with_settings("VFX/Flipbooks/TFlip_ExplosionRegular.png", make_nearest),
+            explosion: assets.load_with_settings(
+                "VFX/Flipbooks/TFlip_ExplosionRegular_Lower.png",
+                make_nearest,
+            ),
             explosion_layout: assets.add(TextureAtlasLayout::from_grid(
-                UVec2::splat(64),
+                UVec2::splat(32),
                 8,
                 8,
                 None,

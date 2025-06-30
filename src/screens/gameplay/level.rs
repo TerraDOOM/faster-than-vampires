@@ -137,6 +137,10 @@ pub struct VisistedPlanet(pub PlanetType);
 
 #[derive(Component, Debug, Clone, Copy, PartialEq, Eq, Default, Reflect)]
 #[reflect(Component)]
+pub struct MainOST;
+
+#[derive(Component, Debug, Clone, Copy, PartialEq, Eq, Default, Reflect)]
+#[reflect(Component)]
 pub struct BackgroundAccess;
 /// A system that spawns the main level.
 pub fn spawn_level(
@@ -170,6 +174,7 @@ pub fn spawn_level(
 
     //Spawn music
     commands.spawn((
+        MainOST,
         AudioPlayer::new(level_assets.music.clone()),
         PlaybackSettings {
             mode: bevy::audio::PlaybackMode::Loop,
@@ -412,7 +417,7 @@ pub fn gen_ui(ui_assets: &Res<UIAssets>) -> impl Bundle {
     (
         Name::new("UIBox"),
         UIBox,
-        BackgroundColor(Color::srgb(0.5, 0.5, 0.5)),
+        BackgroundColor(Color::srgb(0.3, 0.3, 0.3)),
         Node {
             width: Val::Percent(100.0),
             height: Val::Percent(15.0),
@@ -615,6 +620,7 @@ pub fn world_update(
             entity_assets,
             5,
             ShipType::Asteroid,
+            ShipType::Asteroid,
             player.translation,
             SpawnPatterns::Top,
         );
@@ -624,6 +630,7 @@ pub fn world_update(
             entity_assets,
             5,
             ShipType::Asteroid,
+            ShipType::Asteroid,
             player.translation,
             SpawnPatterns::Bot,
         );
@@ -631,8 +638,9 @@ pub fn world_update(
         spawn_enemy(
             commands,
             entity_assets,
-            20,
+            15,
             ShipType::Rammer,
+            ShipType::EmpireGoon,
             player.translation,
             SpawnPatterns::Circle,
         );
@@ -640,8 +648,9 @@ pub fn world_update(
         spawn_enemy(
             commands,
             entity_assets,
-            20,
-            ShipType::Asteroid,
+            10,
+            ShipType::Rammer,
+            ShipType::PirateShip,
             player.translation,
             SpawnPatterns::Circle,
         );
@@ -649,7 +658,8 @@ pub fn world_update(
         spawn_enemy(
             commands,
             entity_assets,
-            15,
+            5,
+            ShipType::Asteroid,
             ShipType::Asteroid,
             player.translation,
             SpawnPatterns::Circle,
@@ -658,19 +668,21 @@ pub fn world_update(
         spawn_enemy(
             commands,
             entity_assets,
-            10,
+            5,
+            ShipType::Rammer,
             ShipType::Asteroid,
             player.translation,
-            SpawnPatterns::Circle,
+            SpawnPatterns::Right,
         );
     } else if player.translation.x < LVL6X {
         spawn_enemy(
             commands,
             entity_assets,
             5,
-            ShipType::Asteroid,
+            ShipType::Rammer,
+            ShipType::EmpireGoon,
             player.translation,
-            SpawnPatterns::Circle,
+            SpawnPatterns::Top,
         );
     }
 }
@@ -681,13 +693,15 @@ pub enum SpawnPatterns {
     Circle,
     Top,
     Bot,
+    Right,
 }
 
 pub fn spawn_enemy(
     mut commands: Commands,
     entity_assets: Res<EntityAssets>,
     spawnrate: usize,
-    ship_type: ShipType,
+    ship_type_for_ai: ShipType,
+    ship_type_for_look: ShipType,
     player_pos: Vec3,
     spawn_patter: SpawnPatterns,
 ) {
@@ -697,6 +711,7 @@ pub fn spawn_enemy(
             SpawnPatterns::Circle => (rng.gen_range(0..360) as f32 / 180.0 * 3.14) as f32,
             SpawnPatterns::Bot => (rng.gen_range(135..225) as f32 / 180.0 * 3.14) as f32,
             SpawnPatterns::Top => (rng.gen_range(135..225) as f32 / 180.0 * 3.14 + 135.0) as f32,
+            SpawnPatterns::Right => (rng.gen_range(45..135) as f32 / 180.0 * 3.14) as f32,
             _ => (rng.gen_range(45..135) as f32 / 180.0 * 3.14) as f32,
         };
 
@@ -707,7 +722,7 @@ pub fn spawn_enemy(
             Vec2::new(rng.gen_range(-10..10) as f32, rng.gen_range(-10..10) as f32) / 20.0;
         let rand_speed = (rng.gen_range(100..300) as f32) / 1500.0;
 
-        match ship_type {
+        match ship_type_for_ai {
             ShipType::Asteroid => {
                 commands.spawn((
                     Name::new("Asteroid"),
@@ -720,18 +735,33 @@ pub fn spawn_enemy(
                 ));
             }
             ShipType::EmpireGoon => {
-                commands.spawn((
-                    Name::new("Goon"),
-                    StateScoped(Screen::Gameplay),
-                    gen_goon(&entity_assets, position),
-                ));
+                commands
+                    .spawn((
+                        Name::new("Rammer_goon"),
+                        StateScoped(Screen::Gameplay),
+                        gen_rammer(&entity_assets, position, Vec2::ZERO, ship_type_for_look),
+                    ))
+                    .observe(
+                        |trigger: Trigger<OnCollisionStart>,
+                         mut commands: Commands,
+                         trans: Query<&Transform, With<RammerAI>>,
+                         player: Single<Entity, With<Player>>,
+                         assets: Res<EntityAssets>| {
+                            commands.trigger_targets(Damage(30), trigger.collider);
+                            commands.get_entity(trigger.target()).unwrap().despawn();
+                            commands.spawn((
+                                trans.get(trigger.target()).unwrap().clone(),
+                                assets.get_explosion(),
+                            ));
+                        },
+                    );
             }
             ShipType::Rammer => {
                 commands
                     .spawn((
                         Name::new("Rammer"),
                         StateScoped(Screen::Gameplay),
-                        gen_rammer(&entity_assets, position, Vec2::ZERO),
+                        gen_rammer(&entity_assets, position, Vec2::ZERO, ship_type_for_look),
                     ))
                     .observe(
                         |trigger: Trigger<OnCollisionStart>,
