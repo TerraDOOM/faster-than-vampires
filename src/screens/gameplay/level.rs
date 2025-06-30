@@ -35,7 +35,7 @@ pub(super) fn plugin(app: &mut App) {
     app.add_systems(Update, world_update.in_set(GameplayLogic));
 }
 
-const LVL1X: f32 = 0.0;
+const LVL1X: f32 = 4000.0;
 const LVL2X: f32 = 21000.0;
 const LVL3X: f32 = 35000.0;
 const LVL4X: f32 = 50000.0;
@@ -105,7 +105,7 @@ impl FromWorld for LevelAssets {
         use crate::util::make_nearest;
         let assets = world.resource::<AssetServer>();
         Self {
-            music: assets.load("audio/music/Fluffing A Duck.ogg"),
+            music: assets.load("audio/music/Orbital fight.ogg"),
             background: assets.load_with_settings("images/level/background.png", make_nearest),
             planet1: assets.load_with_settings("images/level/Planet1.png", make_nearest),
             planet2: assets.load_with_settings("images/level/Planet2.png", make_nearest),
@@ -166,8 +166,8 @@ pub fn spawn_level(
                 &level_assets,
                 &ui_assets,
                 Vec2::new(LVL1X * 0.1, 128.0),
-                PlanetType::EarthPlanet,
-                true
+                PlanetType::LavaPlanet,
+                false
             ),
             gen_planet(
                 &level_assets,
@@ -180,14 +180,14 @@ pub fn spawn_level(
                 &level_assets,
                 &ui_assets,
                 Vec2::new(LVL2X * 0.1, -YMAX / 25.0),
-                PlanetType::LavaPlanet,
+                PlanetType::DesertPlanet,
                 false
             ),
             gen_planet(
                 &level_assets,
                 &ui_assets,
                 Vec2::new(LVL3X * 0.1, 0.0),
-                PlanetType::DesertPlanet,
+                PlanetType::HollowPlanet,
                 false
             ),
             gen_planet(

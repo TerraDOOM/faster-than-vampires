@@ -6,8 +6,10 @@ use std::collections::{HashMap, HashSet};
 use crate::menus::Menu;
 
 use super::{
-    combat::weapons::{self, WeaponAssets},
-    enemies,
+    combat::{
+        weapons::{self, WeaponAssets},
+        Health,
+    },
     level::{PlanetType, UIAssets, VisistedPlanet},
     player::Player,
     GameplayLogic,
@@ -29,7 +31,7 @@ pub(super) fn plugin(app: &mut App) {
             *upgrades
                 .into_inner()
                 .gotten_upgrades
-                .entry(UpgradeTypes::Laser)
+                .entry(UpgradeTypes::Orb)
                 .or_insert(0) += 1;
         })
         .run_if(input_just_pressed(KeyCode::Space))
@@ -43,18 +45,27 @@ pub(super) fn plugin(app: &mut App) {
 pub enum UpgradeTypes {
     #[default]
     Cannon,
-    Missile,
     Laser,
     Electricity,
     Health,
     Thrusters,
     Emp,
+    Orb,
+    BlackHole,
 }
 
 impl UpgradeTypes {
     pub fn all_upgrades() -> Vec<Self> {
         use UpgradeTypes::*;
-        vec![Cannon, Missile, Laser, Electricity, Health, Thrusters]
+        vec![
+            Cannon,
+            Laser,
+            Electricity,
+            Health,
+            Thrusters,
+            Orb,
+            BlackHole,
+        ]
     }
 }
 
@@ -66,6 +77,7 @@ pub struct Upgrades {
 pub fn update_upgrades(
     mut commands: Commands,
     weapon_assets: Res<WeaponAssets>,
+    mut hp: Single<&mut Health, With<Player>>,
     upgrades: Single<(Entity, &Upgrades), (With<Player>, Changed<Upgrades>)>,
 ) {
     let (ent, upgrades) = upgrades.into_inner();
@@ -80,6 +92,7 @@ pub fn update_upgrades(
             .cloned()
             .unwrap_or(0),
     );
+
     let laser = upgrades
         .gotten_upgrades
         .get(&UpgradeTypes::Laser)
@@ -95,6 +108,21 @@ pub fn update_upgrades(
             .unwrap_or(0),
     );
 
+    let (orb_container, orbs) = weapons::spawn_orbiters(
+        upgrades
+            .gotten_upgrades
+            .get(&UpgradeTypes::Orb)
+            .cloned()
+            .unwrap_or(0),
+        &weapon_assets,
+    );
+    let hp_level = upgrades
+        .gotten_upgrades
+        .get(&UpgradeTypes::Health)
+        .cloned()
+        .unwrap_or(0) as i32;
+    hp.0 = 100 * hp_level;
+
     player.with_children(|parent| {
         for cannon in cannons {
             parent.spawn(cannon);
@@ -106,6 +134,14 @@ pub fn update_upgrades(
 
         for field in fields {
             parent.spawn(field);
+        }
+
+        if orbs.len() > 0 {
+            parent.spawn(orb_container).with_children(|cont| {
+                for orb in orbs {
+                    cont.spawn(orb);
+                }
+            });
         }
     });
 }
@@ -123,13 +159,26 @@ pub fn draft_upgrades(
         .cloned()
         .collect::<Vec<UpgradeTypes>>();
 
+    // let banned_upgrade: &HashSet;
+
+    // if owned_upgrades.get(UpgradeTypes::Cannon).is_some() {
+    //     if owned_upgrades.get(UpgradeTypes::Cannon).unwrap() > 2 {
+    //         banned_upgrade.insert(UpgradeTypes::Cannon);
+    //     }
+    // }
+
     let all_upgrades: HashSet<_> = UpgradeTypes::all_upgrades().into_iter().collect();
     let non_owned: Vec<UpgradeTypes> = all_upgrades
         .difference(&HashSet::from_iter(owned_upgrades.iter().cloned()))
         .cloned()
         .collect();
-
     let mut non_owned = non_owned.into_iter().collect::<Vec<UpgradeTypes>>();
+
+    // let owned_allowed: Vec<UpgradeTypes> = banned_upgrade
+    //     .difference(&HashSet::from_iter(owned_upgrades.iter().cloned()))
+    //     .cloned()
+    //     .collect();
+    //let mut owned_allowed = non_owned.into_iter().collect::<Vec<UpgradeTypes>>();
 
     let upgrade1 = owned_upgrades.choose(&mut rng).unwrap();
     let upgrade2 = non_owned
@@ -271,7 +320,8 @@ pub fn gen_shop_item(
                 UpgradeTypes::Electricity  => format!("Lvl.{} HV-field", upgrade_level),
                 UpgradeTypes::Laser  => format!("Lvl.{} Photon canon", upgrade_level),
                 UpgradeTypes::Health  => format!("Lvl.{} Shield", upgrade_level),
-                _ => "unkown upgrade".to_string(),
+                UpgradeTypes::Orb => format!("Lvl.{} Orb", upgrade_level),
+                _ => "unknown upgrade".to_string(),
             }),
             TextFont {
                 font: ui_assets.font.clone(),

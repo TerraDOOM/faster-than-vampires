@@ -1,11 +1,15 @@
-use std::time::Instant;
+use std::{f32::consts::PI, time::Instant};
 
 use avian2d::prelude::*;
 use bevy::{math::VectorSpace, prelude::*};
 
 use crate::{asset_tracking::LoadResource, PausableSystems};
 
-use super::{animation::AnimatedSprite, combat::Damage, player::Player};
+use super::{
+    animation::AnimatedSprite,
+    combat::{Damage, Health},
+    player::Player,
+};
 
 #[repr(usize)]
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
@@ -40,6 +44,22 @@ pub(super) fn plugin(app: &mut App) {
 #[derive(Component)]
 pub struct Enemy;
 pub fn gen_enemy(ship: Ship, assets: &EntityAssets, init_velocity: Vec2) -> impl Bundle {
+    let pos = ship.position;
+
+    gen_enemy_trans(
+        ship,
+        assets,
+        init_velocity,
+        Transform::from_xyz(pos.x, pos.y, 0.0),
+    )
+}
+
+pub fn gen_enemy_trans(
+    ship: Ship,
+    assets: &EntityAssets,
+    init_velocity: Vec2,
+    transform: Transform,
+) -> impl Bundle {
     // A texture atlas is a way to split a single image into a grid of related images.
     // You can learn more in this example: https://github.com/bevyengine/bevy/blob/latest/examples/2d/texture_atlas.rs
 
@@ -70,7 +90,7 @@ pub fn gen_enemy(ship: Ship, assets: &EntityAssets, init_velocity: Vec2) -> impl
                 Collider::circle(32.0),
             )
         },
-        Transform::from_xyz(ship.position.x, ship.position.y, 0.0),
+        transform,
         RigidBody::Dynamic,
         LinearVelocity(init_velocity),
     )
@@ -93,14 +113,23 @@ pub fn gen_goon(assets: &EntityAssets, position: Vec2) -> impl Bundle {
 #[derive(Component, Debug, Copy, Clone, PartialEq, Eq)]
 pub struct FlagshipAI;
 pub fn gen_flagship(assets: &EntityAssets) -> impl Bundle {
+    let position = Vec2::new(-512.0, 0.0);
+
     let flagship = Ship {
         shiptype: ShipType::Flagship,
-        position: Vec2::new(-512.0, 0.0),
         lifetime: Instant::now(),
+        position,
         weapons: Vec::new(),
     };
+
     (
-        gen_enemy(flagship, assets, Vec2::ZERO),
+        gen_enemy_trans(
+            flagship,
+            assets,
+            Vec2::ZERO,
+            Transform::from_translation(position.extend(0.0))
+                .with_rotation(Quat::from_rotation_z(-PI / 2.0)),
+        ),
         FlagshipAI,
         ExternalImpulse::new(Vec2::ZERO),
         Mass(10.0),
@@ -164,7 +193,11 @@ pub fn gen_asteroid(assets: &EntityAssets, position: Vec2, init_velocity: Vec2) 
         lifetime: Instant::now(),
         weapons: Vec::new(),
     };
-    (gen_enemy(asteroid, assets, init_velocity), AsteroidAI)
+    (
+        gen_enemy(asteroid, assets, init_velocity),
+        AsteroidAI,
+        Health(250),
+    )
 }
 
 #[derive(Component, Debug, Copy, Clone, PartialEq, Eq)]
@@ -189,6 +222,7 @@ pub fn gen_rammer(assets: &EntityAssets, position: Vec2, init_velocity: Vec2) ->
         LinearDamping(0.8),
         AngularDamping(0.1),
         CollisionEventsEnabled,
+        Health(50),
     )
 }
 
