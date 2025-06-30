@@ -154,9 +154,14 @@ pub fn spawn_level(
         Sprite {
             image: level_assets.background.clone(),
             custom_size: Some(Vec2 {
-                x: 1920.0,
-                y: 1080.0,
+                x: LVL7X / 10.0 * 16.0,
+                y: LVL7X / 10.0 * 9.0,
             }),
+            image_mode: SpriteImageMode::Tiled {
+                tile_x: true,
+                tile_y: true,
+                stretch_value: 2.0,
+            },
             ..default()
         },
     ));

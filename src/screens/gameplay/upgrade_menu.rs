@@ -10,6 +10,7 @@ use super::{
         weapons::{self, WeaponAssets},
         Health,
     },
+    enemies::FlagshipAI,
     level::{PlanetType, UIAssets, VisistedPlanet},
     player::Player,
     GameplayLogic,
@@ -78,12 +79,18 @@ pub fn update_upgrades(
     mut commands: Commands,
     weapon_assets: Res<WeaponAssets>,
     mut hp: Single<&mut Health, With<Player>>,
+    mut flagship_entity: Single<Entity, With<FlagshipAI>>,
     upgrades: Single<(Entity, &Upgrades), (With<Player>, Changed<Upgrades>)>,
 ) {
     //Spawn music
     //commands.spawn((AudioPlayer::new(weapon_assets.exit_shop.clone()),));
 
     let (ent, upgrades) = upgrades.into_inner();
+
+    if upgrades.gotten_upgrades.get(&UpgradeTypes::Emp).is_some() {
+        commands.entity(*flagship_entity).insert(Health(1000));
+    }
+
     let mut player = commands.get_entity(ent).unwrap();
     player.despawn_related::<Children>();
 
