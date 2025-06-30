@@ -3,9 +3,11 @@ use std::{f32::consts::PI, time::Duration};
 use avian2d::prelude::*;
 use bevy::{
     image::{ImageLoaderSettings, ImageSampler, ImageSamplerDescriptor},
+    math::FloatPow,
     prelude::*,
     sprite::Anchor,
 };
+use rand::Rng;
 
 use crate::{
     asset_tracking::LoadResource,
@@ -26,7 +28,16 @@ use super::Damage;
 pub fn plugin(app: &mut App) {
     app.register_type::<WeaponAssets>();
     app.load_resource::<WeaponAssets>();
-    app.add_systems(Update, (fire_cannon, rotate_orbs).in_set(GameplayLogic));
+    app.add_systems(
+        Update,
+        (
+            fire_cannon,
+            rotate_orbs,
+            process_blackhole_spawners,
+            process_blackholes,
+        )
+            .in_set(GameplayLogic),
+    );
     app.add_systems(
         Update,
         (
@@ -80,6 +91,14 @@ pub struct WeaponAssets {
     orb_layout: Handle<TextureAtlasLayout>,
 
     #[dependency]
+    blackhole_forming: Handle<Image>,
+    blackhole_forming_layout: Handle<TextureAtlasLayout>,
+
+    #[dependency]
+    blackhole: Handle<Image>,
+    blackhole_layout: Handle<TextureAtlasLayout>,
+
+    #[dependency]
     pub exit_shop: Handle<AudioSource>,
 
     #[dependency]
@@ -123,17 +142,14 @@ impl WeaponAssets {
 impl FromWorld for WeaponAssets {
     fn from_world(world: &mut World) -> Self {
         use crate::util::make_nearest;
+        let mkatlas =
+            |v, cols, rows| TextureAtlasLayout::from_grid(UVec2::splat(v), cols, rows, None, None);
+
         let assets = world.get_resource_mut::<AssetServer>().unwrap();
         WeaponAssets {
             cannon: assets.load_with_settings("images/entities/Gun1.png", make_nearest),
             laser_shot: assets.load("VFX/Flipbooks/TFlip_LaserBall.png"),
-            laser_shot_layout: assets.add(TextureAtlasLayout::from_grid(
-                UVec2::splat(32),
-                5,
-                3,
-                None,
-                None,
-            )),
+            laser_shot_layout: assets.add(mkatlas(32, 5, 3)),
             muzzle_flash: assets.load_with_settings("VFX/Flipbooks/TFlip_Blast.png", make_nearest),
             muzzle_flash_layout: assets.add(TextureAtlasLayout::from_grid(
                 UVec2::splat(86),
@@ -209,6 +225,14 @@ impl FromWorld for WeaponAssets {
                 None,
                 None,
             )),
+            blackhole_forming: assets
+                .load_with_settings("VFX/Flipbooks/TFlip_BlackHoleSpawn.png", make_nearest),
+            blackhole_forming_layout: assets.add(mkatlas(64, 5, 5)),
+
+            blackhole: assets
+                .load_with_settings("VFX/Flipbooks/TFlip_BlackHoleActive.png", make_nearest),
+            blackhole_layout: assets.add(mkatlas(64, 8, 8)),
+
             exit_shop: assets.load("audio/sound_effects/button_click2.ogg"),
             sfx_laser: assets.load("audio/sound_effects/laser_shoot.ogg"),
             sfx_bullet: assets.load("audio/sound_effects/canon_shoot.ogg"),
@@ -861,4 +885,114 @@ pub fn spawn_orbiters(n: usize, assets: &Res<WeaponAssets>) -> (impl Bundle, Vec
         ),
         orbiters,
     )
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum BlackholeState {
+    Forming,
+    Sucking,
+}
+
+#[derive(Component)]
+pub struct Blackhole {
+    state: BlackholeState,
+    timer: Timer,
+}
+
+const FORMATION_TIME: u64 = 5;
+const SUCK_TIME: u64 = 30;
+
+#[derive(Component)]
+pub struct BlackholeSpawner {
+    pub timer: Timer,
+}
+
+pub fn process_blackholes(
+    mut commands: Commands,
+    assets: Res<WeaponAssets>,
+    time: Res<Time>,
+    bh: Query<(
+        Entity,
+        &mut Blackhole,
+        &mut Sprite,
+        &mut AnimatedSprite,
+        &Transform,
+    )>,
+    mut enemies: Query<(&Transform, &mut ExternalForce), With<Enemy>>,
+) {
+    for (ent, mut bh, mut bh_sprite, mut animation, bh_location) in bh {
+        bh.timer.tick(time.delta());
+        if bh.timer.just_finished() {
+            if bh.state == BlackholeState::Forming {
+                bh.timer.set_duration(Duration::from_secs(SUCK_TIME));
+                bh.state = BlackholeState::Sucking;
+                bh_sprite.image = assets.blackhole.clone();
+                bh_sprite.texture_atlas = Some(TextureAtlas {
+                    layout: assets.blackhole_layout.clone(),
+                    index: 0,
+                });
+                *animation = AnimatedSprite::new(50, 64, AnimationType::Repeating);
+            } else {
+                commands.entity(ent).despawn();
+            }
+        }
+        let force = match bh.state {
+            BlackholeState::Forming => 300.0,
+            BlackholeState::Sucking => 20000.0,
+        };
+
+        for (enemy_location, mut enemy_force) in enemies.iter_mut() {
+            let to_bh = (bh_location.translation.xy() - enemy_location.translation.xy());
+
+            if to_bh.length() > 500.0 {
+                continue;
+            }
+
+            enemy_force.apply_force(to_bh.normalize() * force / (to_bh / 100.0).length().squared());
+        }
+    }
+}
+
+pub fn process_blackhole_spawners(
+    time: Res<Time>,
+    bh: Query<&mut BlackholeSpawner>,
+    player: Single<&Transform, With<Player>>,
+    assets: Res<WeaponAssets>,
+    mut commands: Commands,
+) {
+    let mut rng = rand::rng();
+
+    let dx = rng.random_range(-1000.0..1000.0);
+    let dy = rng.random_range(-1000.0..1000.0);
+    let transform = Transform::from_translation(Vec3::new(dx, dy, 0.0) + player.translation);
+
+    for mut hole in bh {
+        hole.timer.tick(time.delta());
+        if hole.timer.just_finished() {
+            println!("spawning black hole at {}", transform.translation);
+            commands.spawn((
+                transform,
+                Blackhole {
+                    state: BlackholeState::Forming,
+                    timer: Timer::new(Duration::from_secs(FORMATION_TIME), TimerMode::Once),
+                },
+                Sprite {
+                    image: assets.blackhole_forming.clone(),
+                    custom_size: Some(Vec2::splat(512.0)),
+                    texture_atlas: Some(TextureAtlas {
+                        layout: assets.blackhole_forming_layout.clone(),
+                        index: 0,
+                    }),
+                    ..default()
+                },
+                RigidBody::Static,
+                Sensor,
+                Collider::circle(128.0),
+                ContinuosDamage {
+                    damage_per_frame: 2,
+                },
+                AnimatedSprite::new(80, 25, AnimationType::Repeating),
+            ));
+        }
+    }
 }

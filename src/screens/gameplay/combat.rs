@@ -39,7 +39,15 @@ pub struct Dead;
 #[derive(Component)]
 pub struct HasWeapon;
 
-fn damage_trigger(trigger: Trigger<Damage>, mut killable: Query<&mut Health>) {
+fn damage_trigger(
+    trigger: Trigger<Damage>,
+    mut killable: Query<&mut Health>,
+    player: Option<Single<Entity, With<Player>>>,
+) {
+    if player.is_some_and(|player| trigger.target() == *player) {
+        log::info!("Player took {} damage", trigger.0);
+    }
+
     let Ok(mut target) = killable.get_mut(trigger.target()) else {
         return;
     };
@@ -74,7 +82,6 @@ fn process_asteroid_collisions(
         commands.trigger_targets(Damage(damage as i32), *player);
     }
 }
-
 
 fn remove_dead_enemies(enemies: Query<(Entity, &Health), Without<Player>>, mut commands: Commands) {
     for (enemy, health) in enemies {

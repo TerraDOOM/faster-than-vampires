@@ -7,7 +7,7 @@ use crate::menus::Menu;
 
 use super::{
     combat::{
-        weapons::{self, WeaponAssets},
+        weapons::{self, BlackholeSpawner, WeaponAssets},
         Health,
     },
     enemies::FlagshipAI,
@@ -152,6 +152,15 @@ pub fn update_upgrades(
                 for orb in orbs {
                     cont.spawn(orb);
                 }
+            });
+        }
+
+        if upgrades
+            .gotten_upgrades
+            .contains_key(&UpgradeTypes::BlackHole)
+        {
+            parent.spawn(BlackholeSpawner {
+                timer: Timer::from_seconds(30.0, TimerMode::Repeating),
             });
         }
     });
