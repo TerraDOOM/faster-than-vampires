@@ -108,7 +108,6 @@ pub fn update_upgrades(
             .unwrap_or(0),
     );
 
-<<<<<<< Updated upstream
     let (orb_container, orbs) = weapons::spawn_orbiters(
         upgrades
             .gotten_upgrades
@@ -117,14 +116,12 @@ pub fn update_upgrades(
             .unwrap_or(0),
         &weapon_assets,
     );
-=======
     let hp_level = upgrades
         .gotten_upgrades
         .get(&UpgradeTypes::Health)
         .cloned()
         .unwrap_or(0) as i32;
     hp.0 = 100 * hp_level;
->>>>>>> Stashed changes
 
     player.with_children(|parent| {
         for cannon in cannons {

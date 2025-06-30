@@ -121,7 +121,16 @@ pub fn gen_flagship(assets: &EntityAssets) -> impl Bundle {
     };
 
     (
-        gen_enemy(flagship, assets, Vec2::ZERO),
+        gen_enemy_trans(
+            flagship,
+            assets,
+            Vec2::ZERO,
+            Transform::from_translation(
+                position
+                    .extend(0.0)
+                    .with_rotation(Quat::from_rotation_z(-PI / 2.0)),
+            ),
+        ),
         FlagshipAI,
         ExternalImpulse::new(Vec2::ZERO),
         Mass(10.0),
@@ -342,7 +351,7 @@ impl FromWorld for EntityAssets {
         use crate::util::make_nearest;
         let assets = world.resource::<AssetServer>();
         Self {
-            flagship: assets.load_with_settings("images/entities/Flagship.png", make_nearest),
+            flagship: assets.load_with_settings("images/entities/Flagship-old.png", make_nearest),
             empire_goon: assets.load_with_settings("images/entities/Enemy1.png", make_nearest),
             pirate_ship: assets.load_with_settings("images/entities/Enemy2.png", make_nearest),
             outpost: assets.load_with_settings("images/mascot.png", make_nearest),
