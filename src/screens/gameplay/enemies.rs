@@ -218,6 +218,7 @@ pub fn gen_rammer(
     position: Vec2,
     init_velocity: Vec2,
     ship_look: ShipType,
+    rotation: f32,
 ) -> impl Bundle {
     let rammer = Ship {
         shiptype: ship_look,
@@ -226,7 +227,13 @@ pub fn gen_rammer(
         weapons: Vec::new(),
     };
     (
-        gen_enemy(rammer, assets, init_velocity),
+        gen_enemy_trans(
+            rammer,
+            assets,
+            init_velocity,
+            Transform::from_translation(position.extend(0.0))
+                .with_rotation(Quat::from_rotation_z(rotation)),
+        ),
         RammerAI::Aiming,
         ExternalImpulse::new(Vec2::ZERO),
         Mass(1.0),

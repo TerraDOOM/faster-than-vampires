@@ -739,7 +739,13 @@ pub fn spawn_enemy(
                     .spawn((
                         Name::new("Rammer_goon"),
                         StateScoped(Screen::Gameplay),
-                        gen_rammer(&entity_assets, position, Vec2::ZERO, ship_type_for_look),
+                        gen_rammer(
+                            &entity_assets,
+                            position,
+                            Vec2::ZERO,
+                            ship_type_for_look,
+                            -3.14 / 2.0,
+                        ),
                     ))
                     .observe(
                         |trigger: Trigger<OnCollisionStart>,
@@ -757,11 +763,18 @@ pub fn spawn_enemy(
                     );
             }
             ShipType::Rammer => {
+                println!("spawn_angle: {}", relative_postion.to_angle());
                 commands
                     .spawn((
                         Name::new("Rammer"),
                         StateScoped(Screen::Gameplay),
-                        gen_rammer(&entity_assets, position, Vec2::ZERO, ship_type_for_look),
+                        gen_rammer(
+                            &entity_assets,
+                            position,
+                            Vec2::ZERO,
+                            ship_type_for_look,
+                            relative_postion.to_angle() + 3.14 / 2.0,
+                        ),
                     ))
                     .observe(
                         |trigger: Trigger<OnCollisionStart>,
@@ -770,7 +783,7 @@ pub fn spawn_enemy(
                          player: Single<Entity, With<Player>>,
                          assets: Res<EntityAssets>| {
                             commands.trigger_targets(Damage(30), trigger.collider);
-                            commands.get_entity(trigger.target()).unwrap().despawn();
+                            //commands.get_entity(trigger.target()).unwrap().despawn();
                             commands.spawn((
                                 trans.get(trigger.target()).unwrap().clone(),
                                 assets.get_explosion(),
