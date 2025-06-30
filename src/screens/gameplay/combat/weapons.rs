@@ -68,6 +68,18 @@ pub struct WeaponAssets {
     #[dependency]
     orb: Handle<Image>,
     orb_layout: Handle<TextureAtlasLayout>,
+
+    #[dependency]
+    pub exit_shop: Handle<AudioSource>,
+
+    #[dependency]
+    pub sfx_laser: Handle<AudioSource>,
+    #[dependency]
+    pub sfx_bullet: Handle<AudioSource>,
+    #[dependency]
+    pub sfx_orb: Handle<AudioSource>,
+    #[dependency]
+    pub sfx_field: Handle<AudioSource>,
 }
 
 impl WeaponAssets {
@@ -177,6 +189,11 @@ impl FromWorld for WeaponAssets {
                 None,
                 None,
             )),
+            exit_shop: assets.load("audio/sound_effects/button_click2.ogg"),
+            sfx_laser: assets.load("audio/sound_effects/button_click2.ogg"),
+            sfx_bullet: assets.load("audio/sound_effects/laser_shoot.ogg"),
+            sfx_orb: assets.load("audio/sound_effects/button_click2.ogg"),
+            sfx_field: assets.load("audio/sound_effects/button_click2.ogg"),
         }
     }
 }
@@ -383,6 +400,7 @@ pub fn fire_cannon(
             Transform::from_translation(pos + dir * 20.0),
             AnimatedSprite::new(15, 9, AnimationType::Once),
         ));
+        commands.spawn(AudioPlayer::new(assets.sfx_bullet.clone()));
     }
 }
 

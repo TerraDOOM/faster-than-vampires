@@ -84,6 +84,8 @@ pub struct UIAssets {
     pub button2: Handle<Image>,
     #[dependency]
     pub mini_map: Handle<Image>,
+    #[dependency]
+    pub enter_shop: Handle<AudioSource>,
 }
 
 impl FromWorld for UIAssets {
@@ -96,6 +98,7 @@ impl FromWorld for UIAssets {
             button1: assets.load_with_settings("images/ui/Main_button_clicked.png", make_nearest),
             button2: assets.load_with_settings("images/ui/Main_button_unclicked.png", make_nearest),
             mini_map: assets.load_with_settings("images/level/Map.png", make_nearest),
+            enter_shop: assets.load("audio/sound_effects/power_up.ogg"),
         }
     }
 }
@@ -154,6 +157,15 @@ pub fn spawn_level(
     ));
 
     commands.spawn(VisistedPlanet(PlanetType::LavaPlanet));
+
+    //Spawn music
+    commands.spawn((
+        AudioPlayer::new(level_assets.music.clone()),
+        PlaybackSettings {
+            mode: bevy::audio::PlaybackMode::Loop,
+            ..default()
+        },
+    ));
 
     commands.spawn((
         Name::new("Level"),
