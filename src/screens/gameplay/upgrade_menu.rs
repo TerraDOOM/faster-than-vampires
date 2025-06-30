@@ -6,7 +6,10 @@ use std::collections::{HashMap, HashSet};
 use crate::menus::Menu;
 
 use super::{
-    combat::weapons::WeaponAssets,
+    combat::{
+        weapons::{self, WeaponAssets},
+        Health,
+    },
     level::{PlanetType, UIAssets, VisistedPlanet},
     player::Player,
     GameplayLogic,
@@ -28,8 +31,8 @@ pub(super) fn plugin(app: &mut App) {
             *upgrades
                 .into_inner()
                 .gotten_upgrades
-                .get_mut(&UpgradeTypes::Cannon)
-                .unwrap() += 1;
+                .entry(UpgradeTypes::Orb)
+                .or_insert(0) += 1;
         })
         .run_if(input_just_pressed(KeyCode::Space))
         .in_set(GameplayLogic),
@@ -42,18 +45,27 @@ pub(super) fn plugin(app: &mut App) {
 pub enum UpgradeTypes {
     #[default]
     Cannon,
-    Missile,
     Laser,
     Electricity,
     Health,
     Thrusters,
     Emp,
+    Orb,
+    BlackHole,
 }
 
 impl UpgradeTypes {
     pub fn all_upgrades() -> Vec<Self> {
         use UpgradeTypes::*;
-        vec![Cannon, Missile, Laser, Electricity, Health, Thrusters]
+        vec![
+            Cannon,
+            Laser,
+            Electricity,
+            Health,
+            Thrusters,
+            Orb,
+            BlackHole,
+        ]
     }
 }
 
@@ -65,13 +77,14 @@ pub struct Upgrades {
 pub fn update_upgrades(
     mut commands: Commands,
     weapon_assets: Res<WeaponAssets>,
+    mut hp: Single<&mut Health, With<Player>>,
     upgrades: Single<(Entity, &Upgrades), (With<Player>, Changed<Upgrades>)>,
 ) {
     let (ent, upgrades) = upgrades.into_inner();
     let mut player = commands.get_entity(ent).unwrap();
     player.despawn_related::<Children>();
 
-    let cannons = super::combat::weapons::spawn_cannons(
+    let cannons = weapons::spawn_cannons(
         &weapon_assets.cannon,
         upgrades
             .gotten_upgrades
@@ -79,11 +92,12 @@ pub fn update_upgrades(
             .cloned()
             .unwrap_or(0),
     );
-    player.with_children(|commands| {
-        for cannon in cannons {
-            commands.spawn(cannon);
-        }
-    });
+
+    let laser = upgrades
+        .gotten_upgrades
+        .get(&UpgradeTypes::Laser)
+        .cloned()
+        .unwrap_or(0);
 
     let fields = super::combat::weapons::spawn_e_field(
         &weapon_assets,
@@ -93,9 +107,44 @@ pub fn update_upgrades(
             .cloned()
             .unwrap_or(0),
     );
-    player.with_children(|commands| {
+
+<<<<<<< Updated upstream
+    let (orb_container, orbs) = weapons::spawn_orbiters(
+        upgrades
+            .gotten_upgrades
+            .get(&UpgradeTypes::Orb)
+            .cloned()
+            .unwrap_or(0),
+        &weapon_assets,
+    );
+=======
+    let hp_level = upgrades
+        .gotten_upgrades
+        .get(&UpgradeTypes::Health)
+        .cloned()
+        .unwrap_or(0) as i32;
+    hp.0 = 100 * hp_level;
+>>>>>>> Stashed changes
+
+    player.with_children(|parent| {
+        for cannon in cannons {
+            parent.spawn(cannon);
+        }
+
+        if laser > 0 {
+            parent.spawn(weapons::spawn_laser(laser));
+        }
+
         for field in fields {
-            commands.spawn(field);
+            parent.spawn(field);
+        }
+
+        if orbs.len() > 0 {
+            parent.spawn(orb_container).with_children(|cont| {
+                for orb in orbs {
+                    cont.spawn(orb);
+                }
+            });
         }
     });
 }
@@ -113,13 +162,26 @@ pub fn draft_upgrades(
         .cloned()
         .collect::<Vec<UpgradeTypes>>();
 
+    // let banned_upgrade: &HashSet;
+
+    // if owned_upgrades.get(UpgradeTypes::Cannon).is_some() {
+    //     if owned_upgrades.get(UpgradeTypes::Cannon).unwrap() > 2 {
+    //         banned_upgrade.insert(UpgradeTypes::Cannon);
+    //     }
+    // }
+
     let all_upgrades: HashSet<_> = UpgradeTypes::all_upgrades().into_iter().collect();
     let non_owned: Vec<UpgradeTypes> = all_upgrades
         .difference(&HashSet::from_iter(owned_upgrades.iter().cloned()))
         .cloned()
         .collect();
-
     let mut non_owned = non_owned.into_iter().collect::<Vec<UpgradeTypes>>();
+
+    // let owned_allowed: Vec<UpgradeTypes> = banned_upgrade
+    //     .difference(&HashSet::from_iter(owned_upgrades.iter().cloned()))
+    //     .cloned()
+    //     .collect();
+    //let mut owned_allowed = non_owned.into_iter().collect::<Vec<UpgradeTypes>>();
 
     let upgrade1 = owned_upgrades.choose(&mut rng).unwrap();
     let upgrade2 = non_owned
@@ -186,9 +248,39 @@ pub fn generate_buy_menu(
                         ..default()
                     },
                     children![
-                        gen_shop_item(&ui_assets, drafted_upgrades.0, 0, 1),
-                        gen_shop_item(&ui_assets, drafted_upgrades.1, 0, 2),
-                        gen_shop_item(&ui_assets, drafted_upgrades.2, 0, 3),
+                        gen_shop_item(
+                            &ui_assets,
+                            drafted_upgrades.0,
+                            *upgrades
+                                .gotten_upgrades
+                                .get(&drafted_upgrades.0)
+                                .or(Some(&(0 as usize)))
+                                .unwrap()
+                                + 1,
+                            1
+                        ),
+                        gen_shop_item(
+                            &ui_assets,
+                            drafted_upgrades.1,
+                            *upgrades
+                                .gotten_upgrades
+                                .get(&drafted_upgrades.1)
+                                .or(Some(&(0 as usize)))
+                                .unwrap()
+                                + 1,
+                            2
+                        ),
+                        gen_shop_item(
+                            &ui_assets,
+                            drafted_upgrades.2,
+                            *upgrades
+                                .gotten_upgrades
+                                .get(&drafted_upgrades.2)
+                                .or(Some(&(0 as usize)))
+                                .unwrap()
+                                + 1,
+                            3
+                        ),
                     ]
                 ))
             ],
@@ -216,7 +308,6 @@ pub fn gen_shop_item(
             ..default()
         },
         BackgroundColor(Color::srgb(0.5, 0.5, 0.5)),
-
         children![(
             //Title
             Node {
@@ -227,11 +318,13 @@ pub fn gen_shop_item(
                 ..default()
             },
             Text::new(match upgrade_type {
-                UpgradeTypes::Cannon => format!("Lvl.{} Cannon", upgrade_level+1),
-                UpgradeTypes::Thrusters => format!("Lvl.{} Thruster", upgrade_level+1),
+                UpgradeTypes::Cannon => format!("Lvl.{} Cannon", upgrade_level),
+                UpgradeTypes::Thrusters => format!("Lvl.{} Thruster", upgrade_level),
                 UpgradeTypes::Electricity  => format!("Lvl.{} HV-field", upgrade_level),
                 UpgradeTypes::Laser  => format!("Lvl.{} Photon canon", upgrade_level),
-                _ => "unkown upgrade".to_string(),
+                UpgradeTypes::Health  => format!("Lvl.{} Shield", upgrade_level),
+                UpgradeTypes::Orb => format!("Lvl.{} Orb", upgrade_level),
+                _ => "unknown upgrade".to_string(),
             }),
             TextFont {
                 font: ui_assets.font.clone(),

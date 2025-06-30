@@ -21,6 +21,7 @@ use super::{
     combat::{Damage, Health},
     enemies::{FlagshipAI, RammerAI, ShipType},
     player::{gen_player, Player, PlayerAssets},
+    upgrade_menu::{UpgradeTypes, Upgrades},
     GameplayLogic,
 };
 
@@ -34,7 +35,7 @@ pub(super) fn plugin(app: &mut App) {
     app.add_systems(Update, world_update.in_set(GameplayLogic));
 }
 
-const LVL1X: f32 = 0.0;
+const LVL1X: f32 = 4000.0;
 const LVL2X: f32 = 21000.0;
 const LVL3X: f32 = 35000.0;
 const LVL4X: f32 = 50000.0;
@@ -62,6 +63,12 @@ pub struct LevelAssets {
     planet5: Handle<Image>,
     #[dependency]
     planet6: Handle<Image>,
+    #[dependency]
+    planet7: Handle<Image>,
+    #[dependency]
+    planet8: Handle<Image>,
+    #[dependency]
+    planet9: Handle<Image>,
 }
 
 #[derive(Resource, Asset, Clone, Reflect)]
@@ -98,14 +105,17 @@ impl FromWorld for LevelAssets {
         use crate::util::make_nearest;
         let assets = world.resource::<AssetServer>();
         Self {
-            music: assets.load("audio/music/Fluffing A Duck.ogg"),
+            music: assets.load("audio/music/Orbital fight.ogg"),
             background: assets.load_with_settings("images/level/background.png", make_nearest),
             planet1: assets.load_with_settings("images/level/Planet1.png", make_nearest),
             planet2: assets.load_with_settings("images/level/Planet2.png", make_nearest),
             planet3: assets.load_with_settings("images/level/planet3.png", make_nearest),
             planet4: assets.load_with_settings("images/level/Planet4.png", make_nearest),
             planet5: assets.load_with_settings("images/level/Planet5.png", make_nearest),
-            planet6: assets.load_with_settings("images/level/Planet5.png", make_nearest),
+            planet6: assets.load_with_settings("images/level/Planet6.png", make_nearest),
+            planet7: assets.load_with_settings("images/level/Planet7.png", make_nearest),
+            planet8: assets.load_with_settings("images/level/Planet8.png", make_nearest),
+            planet9: assets.load_with_settings("images/level/Planet9.png", make_nearest),
         }
     }
 }
@@ -156,8 +166,8 @@ pub fn spawn_level(
                 &level_assets,
                 &ui_assets,
                 Vec2::new(LVL1X * 0.1, 128.0),
-                PlanetType::EarthPlanet,
-                true
+                PlanetType::LavaPlanet,
+                false
             ),
             gen_planet(
                 &level_assets,
@@ -170,14 +180,14 @@ pub fn spawn_level(
                 &level_assets,
                 &ui_assets,
                 Vec2::new(LVL2X * 0.1, -YMAX / 25.0),
-                PlanetType::LavaPlanet,
+                PlanetType::DesertPlanet,
                 false
             ),
             gen_planet(
                 &level_assets,
                 &ui_assets,
                 Vec2::new(LVL3X * 0.1, 0.0),
-                PlanetType::DesertPlanet,
+                PlanetType::HollowPlanet,
                 false
             ),
             gen_planet(
@@ -212,14 +222,14 @@ pub fn spawn_level(
                 &level_assets,
                 &ui_assets,
                 Vec2::new(LVL6X * 0.1, -YMAX / 2.0),
-                PlanetType::DesertPlanet,
+                PlanetType::PurplePlanet,
                 false
             ),
             gen_planet(
                 &level_assets,
                 &ui_assets,
                 Vec2::new(LVL7X * 0.1, 0.0),
-                PlanetType::DesertPlanet,
+                PlanetType::EarthPlanet,
                 false
             ),
             gen_flagship(&entity_assets),
@@ -237,6 +247,10 @@ pub enum PlanetType {
     EarthPlanet,
     WaterPlanet,
     DesertPlanet,
+    PurplePlanet,
+    GrayPlanet,
+    HollowPlanet,
+    SpaceStation,
 }
 
 #[derive(Component)]
@@ -271,6 +285,10 @@ pub fn gen_planet(
                 PlanetType::EarthPlanet => assets.planet1.clone(),
                 PlanetType::WaterPlanet => assets.planet4.clone(),
                 PlanetType::DesertPlanet => assets.planet5.clone(),
+                PlanetType::GrayPlanet => assets.planet6.clone(),
+                PlanetType::PurplePlanet => assets.planet7.clone(),
+                PlanetType::SpaceStation => assets.planet8.clone(),
+                PlanetType::HollowPlanet => assets.planet9.clone(),
             },
             custom_size: Some(Vec2 { x: 512.0, y: 512.0 }),
             ..default()
@@ -461,7 +479,7 @@ pub fn world_update(
     mut commands: Commands,
     entity_assets: Res<EntityAssets>,
     mut gizmo: Gizmos,
-    player: Single<(&Transform, &Health), With<Player>>,
+    player: Single<(&Transform, &Health, &Upgrades), With<Player>>,
     flagship: Single<&Transform, With<FlagshipAI>>,
     mut ui_position: Single<&mut Text, With<UIPosition>>,
     mut hp_bar: Single<
@@ -514,13 +532,19 @@ pub fn world_update(
 ) {
     gizmo.rect_2d(Isometry2d::IDENTITY, Vec2::new(100.0, 100.0), GREEN);
 
-    let (player, health) = player.into_inner();
+    let (player, health, upgrades) = player.into_inner();
 
     //Position
     ui_position.0 = ((player.translation.x) as i32).to_string();
 
     //HP bar
-    let hp_width = (health.0 as f32 / 100.0 * 40.0).max(0.0);
+    let hp_max = (*upgrades
+        .gotten_upgrades
+        .get(&UpgradeTypes::Health)
+        .clone()
+        .unwrap()) as f32
+        * 100.0;
+    let hp_width = (health.0 as f32 / hp_max * 40.0).max(0.0);
     hp_bar.width = Val::Percent(hp_width);
     anti_hp_bar.width = Val::Percent(40.0 - hp_width);
 
@@ -561,7 +585,7 @@ pub fn world_update(
             5,
             ShipType::Asteroid,
             player.translation,
-            SpawnPatterns::Top,
+            SpawnPatterns::Bot,
         );
     } else if player.translation.x < LVL2X {
         spawn_enemy(
