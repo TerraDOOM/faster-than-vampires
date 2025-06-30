@@ -12,7 +12,7 @@ use crate::{
     screens::{
         gameplay::{
             animation::{AnimatedSprite, AnimationType},
-            enemies::{ContinuosDamage, Enemy},
+            enemies::{ContinuosDamage, Enemy, EvilContinuousDamage, FlagshipAI},
             player::Player,
             GameplayLogic,
         },
@@ -29,7 +29,14 @@ pub fn plugin(app: &mut App) {
     app.add_systems(Update, (fire_cannon, rotate_orbs).in_set(GameplayLogic));
     app.add_systems(
         Update,
-        (fire_laser, animate_laser).chain().in_set(GameplayLogic),
+        (
+            fire_evil_laser,
+            fire_laser,
+            animate_evil_laser,
+            animate_laser,
+        )
+            .chain()
+            .in_set(GameplayLogic),
     );
     app.add_plugins((PhysicsDebugPlugin::default(),));
 }
@@ -60,6 +67,9 @@ pub struct WeaponAssets {
     #[dependency]
     pub laser_hit: Handle<Image>,
     pub laser_hit_layout: Handle<TextureAtlasLayout>,
+
+    #[dependency]
+    pub evil_laser: Handle<Image>,
 
     #[dependency]
     pub laser_muzzle: Handle<Image>,
@@ -181,6 +191,16 @@ impl FromWorld for WeaponAssets {
                 None,
                 None,
             )),
+            evil_laser: assets.load_with_settings(
+                "VFX/Other/T_TilingLaserBeam_Alt.png",
+                |settings: &mut ImageLoaderSettings| {
+                    settings.sampler = ImageSampler::Descriptor(ImageSamplerDescriptor {
+                        address_mode_u: bevy::image::ImageAddressMode::Repeat,
+                        address_mode_v: bevy::image::ImageAddressMode::ClampToEdge,
+                        ..ImageSamplerDescriptor::nearest()
+                    })
+                },
+            ),
             orb: assets.load_with_settings("VFX/Flipbooks/TFlip_OrbitingOrb.png", make_nearest),
             orb_layout: assets.add(TextureAtlasLayout::from_grid(
                 UVec2::splat(64),
@@ -426,12 +446,11 @@ impl Laser {
 
             self.timer.reset();
 
-            self.timer
-                .set_duration(Duration::from_millis(if self.firing {
-                    LASER_FIRE_TIME
-                } else {
-                    LASER_COOLDOWN_TIME
-                }));
+            self.timer.set_duration(if self.firing {
+                self.fire
+            } else {
+                self.cooldown
+            });
         }
     }
 }
@@ -533,7 +552,7 @@ fn fire_laser(
                                 image_mode: SpriteImageMode::Tiled {
                                     tile_x: true,
                                     tile_y: false,
-                                    stretch_value: 3.0,
+                                    stretch_value: 10.0,
                                 },
                                 anchor: Anchor::CenterLeft,
                                 ..default()
@@ -555,6 +574,7 @@ fn fire_laser(
                                 },
                                 Sensor,
                             ));
+
                             laser_sprite.spawn((
                                 Transform::from_xyz(closest_hit, 0.0, 0.0),
                                 assets.get_laser_hit(),
@@ -588,6 +608,195 @@ fn fire_laser(
             continue;
         };
         beam.len = closest_hit;
+    }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum LaserFiringState {
+    Firing,
+    Aiming,
+}
+
+#[derive(Component)]
+pub struct EvilLaser {
+    state: LaserFiringState,
+    aim_start: f32,
+    current_angle: f32,
+    aim_end: f32,
+    sweep_duration: Duration,
+    cooldown_duration: Duration,
+    timer: Timer,
+    damage: usize,
+}
+
+#[derive(Component)]
+struct EvilLaserBeam;
+
+impl EvilLaser {
+    pub fn flagship() -> Self {
+        EvilLaser {
+            state: LaserFiringState::Aiming,
+            aim_start: 0.0,
+            current_angle: 0.0,
+            aim_end: 0.0,
+            sweep_duration: Duration::from_secs(10),
+            cooldown_duration: Duration::from_secs(30),
+            timer: Timer::new(Duration::from_secs(10), TimerMode::Repeating),
+            damage: 200,
+        }
+    }
+
+    fn update_timer(&mut self, delta: Duration) {
+        self.timer.tick(delta);
+
+        let just_finished = self.timer.just_finished();
+        if just_finished {
+            use LaserFiringState as LSF;
+            let (next_state, duration) = match self.state {
+                LSF::Firing => (LSF::Aiming, self.cooldown_duration),
+                LSF::Aiming => (LSF::Firing, self.sweep_duration),
+            };
+
+            self.state = next_state;
+
+            self.timer.reset();
+            self.timer.set_duration(duration);
+        }
+    }
+}
+
+fn animate_evil_laser(beams: Query<&mut Sprite, With<EvilLaserBeam>>) {
+    for mut sprite in beams {
+        let Some(rect) = sprite.rect.as_mut() else {
+            continue;
+        };
+        rect.min.x -= 2.0;
+        rect.max.x -= 2.0;
+    }
+}
+
+fn fire_evil_laser(
+    timer: Res<Time>,
+    mut commands: Commands,
+    assets: Res<WeaponAssets>,
+    lasers: Query<
+        (
+            Entity,
+            &GlobalTransform,
+            &mut Transform,
+            &mut EvilLaser,
+            Option<&Children>,
+        ),
+        (Without<Player>, Without<FlagshipAI>),
+    >,
+    player: Single<(Entity, &Transform), With<Player>>,
+    flagship: Option<Single<&Transform, With<FlagshipAI>>>,
+    mut laser_sprite: Query<&mut LaserBeam>,
+) {
+    use LaserFiringState as LSF;
+
+    let Some(flagship) = flagship else { return };
+
+    for (laser_ent_id, location, mut transform, mut laser, children) in lasers {
+        laser.update_timer(timer.delta());
+        let mut laser_ent = commands.entity(laser_ent_id);
+
+        let closest_hit = 4000.0;
+
+        if laser.state == LSF::Aiming {
+            laser_ent.despawn_related::<Children>();
+            continue;
+        } else {
+            if location.translation().distance(player.1.translation) > 4000.0 {
+                laser.state = LSF::Aiming;
+                let cd = laser.cooldown_duration;
+                laser.timer.set_duration(cd);
+                laser.timer.reset();
+                continue;
+            }
+
+            // spawn in the laser
+            if children.is_none_or(|x| x.is_empty()) {
+                let player_angle = (player.1.translation.xy() - location.translation().xy())
+                    .normalize()
+                    .angle_to(Vec2::X);
+
+                let to_rad = |deg| PI / 180.0 * deg;
+
+                (laser.aim_start, laser.aim_end) =
+                    (player_angle + to_rad(50.0), player_angle - to_rad(50.0));
+
+                laser.current_angle = laser.aim_start;
+
+                laser_ent.with_children(|parent| {
+                    parent
+                        .spawn((
+                            Transform::from_rotation(Quat::from_rotation_z(PI / 2.0)),
+                            Sprite {
+                                custom_size: Some(Vec2::new(closest_hit, 512.0)),
+                                image: assets.evil_laser.clone(),
+                                rect: Some(Rect {
+                                    min: Vec2::ZERO,
+                                    max: Vec2::splat(128.0),
+                                }),
+                                image_mode: SpriteImageMode::Tiled {
+                                    tile_x: true,
+                                    tile_y: false,
+                                    stretch_value: 10.0,
+                                },
+                                anchor: Anchor::CenterLeft,
+                                ..default()
+                            },
+                            EvilLaserBeam,
+                        ))
+                        .with_children(|laser_sprite| {
+                            laser_sprite.spawn((
+                                Transform::from_xyz(closest_hit / 2.0 / 2.0, 0.0, 0.0),
+                                Collider::rectangle(closest_hit, 128.0),
+                                CollisionEventsEnabled,
+                                ContinuosDamage {
+                                    damage_per_frame: laser.damage / 10,
+                                },
+                                EvilContinuousDamage {
+                                    damage_per_frame: laser.damage,
+                                },
+                                Sensor,
+                            ));
+
+                            laser_sprite.spawn((
+                                Transform::from_xyz(closest_hit, 0.0, 0.0),
+                                assets.get_laser_hit(),
+                                LaserHit,
+                            ));
+                        });
+
+                    //Laser muzzle
+                    parent.spawn((
+                        Sprite {
+                            image: assets.laser_muzzle.clone(),
+                            custom_size: Some(Vec2 { x: 32.0, y: 32.0 }),
+                            texture_atlas: Some(TextureAtlas {
+                                layout: assets.laser_muzzle_layout.clone(),
+                                index: 0,
+                            }),
+                            ..default()
+                        },
+                        StateScoped(Screen::Gameplay),
+                        //Transform::from_rotation(Quat::from_rotation_z(0.0)),
+                        Transform::from_xyz(0.0, 2.0, 0.0),
+                        AnimatedSprite::new(15, 9, AnimationType::Repeating),
+                    ));
+                });
+                continue;
+            }
+        }
+
+        laser.current_angle = laser.aim_start
+            + (laser.aim_start - laser.aim_end).abs()
+                * (laser.timer.elapsed_secs_f64() as f32 / laser.timer.duration().as_secs_f32());
+
+        transform.rotation =
+            flagship.rotation.inverse() * Quat::from_rotation_z(-laser.current_angle);
     }
 }
 

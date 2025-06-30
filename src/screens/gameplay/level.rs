@@ -18,7 +18,7 @@ use crate::{
 };
 
 use super::{
-    combat::{Damage, Health},
+    combat::{weapons::EvilLaser, Damage, Health},
     enemies::{FlagshipAI, RammerAI, ShipType},
     player::{gen_player, Player, PlayerAssets},
     upgrade_menu::{UpgradeTypes, Upgrades},
@@ -170,86 +170,101 @@ pub fn spawn_level(
         },
     ));
 
-    commands.spawn((
-        Name::new("Level"),
-        Transform::from_xyz(0.0, 0.0, 0.0),
-        Visibility::default(),
-        StateScoped(Screen::Gameplay),
-        children![
-            gen_player(400.0, &player_assets),
-            gen_planet(
-                &level_assets,
-                &ui_assets,
-                Vec2::new(LVL1X * 0.1, 128.0),
-                PlanetType::LavaPlanet,
-                false
-            ),
-            gen_planet(
-                &level_assets,
-                &ui_assets,
-                Vec2::new(LVL2X * 0.1, YMAX / 25.0),
-                PlanetType::GreenPlanet,
-                false
-            ),
-            gen_planet(
-                &level_assets,
-                &ui_assets,
-                Vec2::new(LVL2X * 0.1, -YMAX / 25.0),
-                PlanetType::DesertPlanet,
-                false
-            ),
-            gen_planet(
-                &level_assets,
-                &ui_assets,
-                Vec2::new(LVL3X * 0.1, 0.0),
-                PlanetType::SpaceStation,
-                false
-            ),
-            gen_planet(
-                &level_assets,
-                &ui_assets,
-                Vec2::new(LVL4X * 0.1, YMAX / 25.0),
-                PlanetType::WaterPlanet,
-                false
-            ),
-            gen_planet(
-                &level_assets,
-                &ui_assets,
-                Vec2::new(LVL4X * 0.1, -YMAX / 25.0),
-                PlanetType::IcePlanet,
-                false
-            ),
-            gen_planet(
-                &level_assets,
-                &ui_assets,
-                Vec2::new(LVL5X * 0.1, 0.0),
-                PlanetType::HollowPlanet,
-                false
-            ),
-            gen_planet(
-                &level_assets,
-                &ui_assets,
-                Vec2::new(LVL6X * 0.1, YMAX / 25.0),
-                PlanetType::GrayPlanet,
-                false
-            ),
-            gen_planet(
-                &level_assets,
-                &ui_assets,
-                Vec2::new(LVL6X * 0.1, -YMAX / 25.0),
-                PlanetType::PurplePlanet,
-                false
-            ),
-            gen_planet(
-                &level_assets,
-                &ui_assets,
-                Vec2::new(95000.0 * 0.1, 0.0),
-                PlanetType::EarthPlanet,
-                false
-            ),
-            gen_flagship(&entity_assets),
-        ],
-    ));
+    commands
+        .spawn((
+            Name::new("Level"),
+            Transform::from_xyz(0.0, 0.0, 0.0),
+            Visibility::default(),
+            StateScoped(Screen::Gameplay),
+            children![
+                gen_player(400.0, &player_assets),
+                gen_planet(
+                    &level_assets,
+                    &ui_assets,
+                    Vec2::new(LVL1X * 0.1, 128.0),
+                    PlanetType::LavaPlanet,
+                    false
+                ),
+                gen_planet(
+                    &level_assets,
+                    &ui_assets,
+                    Vec2::new(LVL2X * 0.1, YMAX / 25.0),
+                    PlanetType::GreenPlanet,
+                    false
+                ),
+                gen_planet(
+                    &level_assets,
+                    &ui_assets,
+                    Vec2::new(LVL2X * 0.1, -YMAX / 25.0),
+                    PlanetType::DesertPlanet,
+                    false
+                ),
+                gen_planet(
+                    &level_assets,
+                    &ui_assets,
+                    Vec2::new(LVL3X * 0.1, 0.0),
+                    PlanetType::SpaceStation,
+                    false
+                ),
+                gen_planet(
+                    &level_assets,
+                    &ui_assets,
+                    Vec2::new(LVL4X * 0.1, YMAX / 25.0),
+                    PlanetType::WaterPlanet,
+                    false
+                ),
+                gen_planet(
+                    &level_assets,
+                    &ui_assets,
+                    Vec2::new(LVL4X * 0.1, -YMAX / 25.0),
+                    PlanetType::IcePlanet,
+                    false
+                ),
+                gen_planet(
+                    &level_assets,
+                    &ui_assets,
+                    Vec2::new(LVL5X * 0.1, 0.0),
+                    PlanetType::HollowPlanet,
+                    false
+                ),
+                gen_planet(
+                    &level_assets,
+                    &ui_assets,
+                    Vec2::new(LVL6X * 0.1, YMAX / 25.0),
+                    PlanetType::GrayPlanet,
+                    false
+                ),
+                gen_planet(
+                    &level_assets,
+                    &ui_assets,
+                    Vec2::new(LVL6X * 0.1, -YMAX / 25.0),
+                    PlanetType::PurplePlanet,
+                    false
+                ),
+                gen_planet(
+                    &level_assets,
+                    &ui_assets,
+                    Vec2::new(95000.0 * 0.1, 0.0),
+                    PlanetType::EarthPlanet,
+                    false
+                ),
+            ],
+        ))
+        .with_children(|level| {
+            level
+                .spawn(gen_flagship(&entity_assets))
+                .with_children(|flagship| {
+                    flagship.spawn((
+                        Transform::from_translation(Vec3::new(0.0, 16.0, 0.0)),
+                        EvilLaser::flagship(),
+                        RayCaster::new(Vec2 { x: 0.0, y: 0.0 }, Dir2::Y)
+                            .with_max_distance(4000.0)
+                            .with_max_hits(100)
+                            .with_solidness(false),
+                    ));
+                });
+        });
+
     commands.spawn(gen_ui(&ui_assets));
 }
 
