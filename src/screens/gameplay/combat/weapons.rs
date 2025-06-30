@@ -12,7 +12,7 @@ use crate::{
     screens::{
         gameplay::{
             animation::{AnimatedSprite, AnimationType},
-            enemies::Enemy,
+            enemies::{ContinuosDamage, Enemy},
             player::Player,
             GameplayLogic,
         },
@@ -244,6 +244,9 @@ pub fn spawn_e_field(assets: &Res<WeaponAssets>, n: usize) -> Vec<impl Bundle> {
             },
         },
         CollisionEventsEnabled,
+        ContinuosDamage {
+            damage_per_frame: 100,
+        },
         Collider::circle(radius / 2.0),
         RigidBody::Static,
         AnimatedSprite::new(30, 15, AnimationType::Repeating),

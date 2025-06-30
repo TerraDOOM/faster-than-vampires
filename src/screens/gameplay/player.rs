@@ -55,7 +55,7 @@ pub fn gen_player(max_speed: f32, player_assets: &PlayerAssets) -> impl Bundle {
         },
         Upgrades {
             gotten_upgrades: HashMap::from([
-                (UpgradeTypes::Cannon, 1),
+                (UpgradeTypes::Electricity, 3),
                 (UpgradeTypes::Health, 1),
                 (UpgradeTypes::Thrusters, 1),
             ]),
