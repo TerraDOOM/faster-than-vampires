@@ -106,6 +106,9 @@ pub struct WeaponAssets {
 
     #[dependency]
     pub sfx_laser: Handle<AudioSource>,
+
+    #[dependency]
+    pub sfx_evil_laser: Handle<AudioSource>,
     #[dependency]
     pub sfx_bullet: Handle<AudioSource>,
     #[dependency]
@@ -238,6 +241,7 @@ impl FromWorld for WeaponAssets {
 
             exit_shop: assets.load("audio/sound_effects/button_click2.ogg"),
             sfx_laser: assets.load("audio/sound_effects/laser_shoot.ogg"),
+            sfx_evil_laser: assets.load("audio/sound_effects/Enemy_flagship_laser.ogg"),
             sfx_bullet: assets.load("audio/sound_effects/canon_shoot.ogg"),
             sfx_orb: assets.load("audio/sound_effects/sound_orb_swhoosh.ogg"),
             sfx_field: assets.load("audio/sound_effects/electric_static.ogg"),
@@ -776,6 +780,11 @@ fn fire_evil_laser(
                                 ..default()
                             },
                             EvilLaserBeam,
+                            AudioPlayer::new(assets.sfx_evil_laser.clone()),
+                            PlaybackSettings {
+                                mode: bevy::audio::PlaybackMode::Loop,
+                                ..default()
+                            },
                         ))
                         .with_children(|laser_sprite| {
                             laser_sprite.spawn((
