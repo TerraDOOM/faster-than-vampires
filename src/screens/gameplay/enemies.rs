@@ -5,7 +5,11 @@ use bevy::{math::VectorSpace, prelude::*};
 
 use crate::{asset_tracking::LoadResource, PausableSystems};
 
-use super::{animation::AnimatedSprite, combat::Damage, player::Player};
+use super::{
+    animation::AnimatedSprite,
+    combat::{Damage, Health},
+    player::Player,
+};
 
 #[repr(usize)]
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
@@ -164,7 +168,11 @@ pub fn gen_asteroid(assets: &EntityAssets, position: Vec2, init_velocity: Vec2) 
         lifetime: Instant::now(),
         weapons: Vec::new(),
     };
-    (gen_enemy(asteroid, assets, init_velocity), AsteroidAI)
+    (
+        gen_enemy(asteroid, assets, init_velocity),
+        AsteroidAI,
+        Health(250),
+    )
 }
 
 #[derive(Component, Debug, Copy, Clone, PartialEq, Eq)]
@@ -189,6 +197,7 @@ pub fn gen_rammer(assets: &EntityAssets, position: Vec2, init_velocity: Vec2) ->
         LinearDamping(0.8),
         AngularDamping(0.1),
         CollisionEventsEnabled,
+        Health(50),
     )
 }
 

@@ -271,7 +271,7 @@ pub fn spawn_e_field(assets: &Res<WeaponAssets>, n: usize) -> Vec<impl Bundle> {
         },
         CollisionEventsEnabled,
         ContinuosDamage {
-            damage_per_frame: 10,
+            damage_per_frame: n * 10,
         },
         Collider::circle(radius / 2.4),
         AnimatedSprite::new(30, 15, AnimationType::Repeating),

@@ -6,7 +6,10 @@ use std::collections::{HashMap, HashSet};
 use crate::menus::Menu;
 
 use super::{
-    combat::weapons::{self, WeaponAssets},
+    combat::{
+        weapons::{self, WeaponAssets},
+        Health,
+    },
     level::{PlanetType, UIAssets, VisistedPlanet},
     player::Player,
     GameplayLogic,
@@ -74,6 +77,7 @@ pub struct Upgrades {
 pub fn update_upgrades(
     mut commands: Commands,
     weapon_assets: Res<WeaponAssets>,
+    mut hp: Single<&mut Health, With<Player>>,
     upgrades: Single<(Entity, &Upgrades), (With<Player>, Changed<Upgrades>)>,
 ) {
     let (ent, upgrades) = upgrades.into_inner();
@@ -104,6 +108,7 @@ pub fn update_upgrades(
             .unwrap_or(0),
     );
 
+<<<<<<< Updated upstream
     let (orb_container, orbs) = weapons::spawn_orbiters(
         upgrades
             .gotten_upgrades
@@ -112,6 +117,14 @@ pub fn update_upgrades(
             .unwrap_or(0),
         &weapon_assets,
     );
+=======
+    let hp_level = upgrades
+        .gotten_upgrades
+        .get(&UpgradeTypes::Health)
+        .cloned()
+        .unwrap_or(0) as i32;
+    hp.0 = 100 * hp_level;
+>>>>>>> Stashed changes
 
     player.with_children(|parent| {
         for cannon in cannons {
