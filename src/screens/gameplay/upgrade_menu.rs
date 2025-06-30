@@ -162,7 +162,7 @@ pub fn update_upgrades(
             .contains_key(&UpgradeTypes::BlackHole)
         {
             parent.spawn(BlackholeSpawner {
-                timer: Timer::from_seconds(30.0, TimerMode::Repeating),
+                timer: Timer::from_seconds(5.0, TimerMode::Repeating),
             });
         }
     });

@@ -42,9 +42,6 @@ impl AnimatedSprite {
 
     pub fn update_timer(&mut self, delta: Duration) {
         self.timer.tick(delta);
-        if !self.timer.finished() {
-            return;
-        }
     }
 }
 
@@ -55,7 +52,9 @@ pub fn update_animations(
 ) {
     for (ent, mut sprite, mut animation) in animations {
         animation.update_timer(time.delta());
-        animation.frame += 1;
+        if animation.timer.just_finished() {
+            animation.frame += 1;
+        }
         if animation.animation_type == AnimationType::Once
             && animation.frame >= animation.total_frames
         {

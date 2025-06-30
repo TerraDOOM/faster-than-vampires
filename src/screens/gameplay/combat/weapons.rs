@@ -49,7 +49,6 @@ pub fn plugin(app: &mut App) {
             .chain()
             .in_set(GameplayLogic),
     );
-    app.add_plugins((PhysicsDebugPlugin::default(),));
 }
 
 #[derive(Resource, Asset, Clone, Reflect)]
@@ -935,9 +934,10 @@ pub fn process_blackholes(
 ) {
     for (ent, mut bh, mut bh_sprite, mut animation, bh_location) in bh {
         bh.timer.tick(time.delta());
-        if bh.timer.just_finished() {
+        if bh.timer.finished() {
             if bh.state == BlackholeState::Forming {
                 bh.timer.set_duration(Duration::from_secs(SUCK_TIME));
+                bh.timer.reset();
                 bh.state = BlackholeState::Sucking;
                 bh_sprite.image = assets.blackhole.clone();
                 bh_sprite.texture_atlas = Some(TextureAtlas {
@@ -955,16 +955,18 @@ pub fn process_blackholes(
         };
 
         for (enemy_location, mut enemy_force) in enemies.iter_mut() {
-            let to_bh = (bh_location.translation.xy() - enemy_location.translation.xy());
+            let to_bh = bh_location.translation.xy() - enemy_location.translation.xy();
 
-            if to_bh.length() > 500.0 {
+            if to_bh.length() > 100.0 {
                 continue;
             }
 
-            enemy_force.apply_force(to_bh.normalize() * force / (to_bh / 100.0).length().squared());
+            enemy_force.apply_force(to_bh.normalize() * force / (to_bh / 10.0).length().squared());
         }
     }
 }
+
+const MS_PER_FRAME: usize = 50;
 
 pub fn process_blackhole_spawners(
     time: Res<Time>,
@@ -975,8 +977,8 @@ pub fn process_blackhole_spawners(
 ) {
     let mut rng = rand::rng();
 
-    let dx = rng.random_range(-1000.0..1000.0);
-    let dy = rng.random_range(-1000.0..1000.0);
+    let dx = rng.random_range(-800.0..800.0);
+    let dy = rng.random_range(-800.0..800.0);
     let transform = Transform::from_translation(Vec3::new(dx, dy, 0.0) + player.translation);
 
     for mut hole in bh {
@@ -987,7 +989,10 @@ pub fn process_blackhole_spawners(
                 transform,
                 Blackhole {
                     state: BlackholeState::Forming,
-                    timer: Timer::new(Duration::from_secs(FORMATION_TIME), TimerMode::Once),
+                    timer: Timer::new(
+                        Duration::from_millis(MS_PER_FRAME as u64 * 25),
+                        TimerMode::Once,
+                    ),
                 },
                 Sprite {
                     image: assets.blackhole_forming.clone(),
@@ -998,13 +1003,14 @@ pub fn process_blackhole_spawners(
                     }),
                     ..default()
                 },
+                AnimatedSprite::new(MS_PER_FRAME, 25, AnimationType::Repeating),
                 RigidBody::Static,
                 Sensor,
+                StateScoped(Screen::Gameplay),
                 Collider::circle(128.0),
                 ContinuosDamage {
                     damage_per_frame: 2,
                 },
-                AnimatedSprite::new(80, 25, AnimationType::Repeating),
             ));
         }
     }
