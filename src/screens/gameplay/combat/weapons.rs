@@ -14,13 +14,12 @@ use crate::{
     screens::{
         gameplay::{
             animation::{AnimatedSprite, AnimationType},
-            enemies::{ContinuosDamage, Enemy, EvilContinuousDamage, FlagshipAI},
+            enemies::{ContinuousDamage, Enemy, EvilContinuousDamage, FlagshipAI},
             player::Player,
             GameplayLogic,
         },
         Screen,
     },
-    util::make_nearest,
 };
 
 use super::Damage;
@@ -347,8 +346,8 @@ pub fn spawn_e_field(assets: &Res<WeaponAssets>, n: usize) -> Vec<impl Bundle> {
                 ..default()
             },
             CollisionEventsEnabled,
-            ContinuosDamage {
-                damage_per_frame: n * 10,
+            ContinuousDamage {
+                damage_per_frame: n as f64 * 10.0,
             },
             Collider::circle(radius / 2.4),
             AnimatedSprite::new(30, 15, AnimationType::Repeating),
@@ -381,7 +380,7 @@ pub fn fire_cannon(
     enemies: Query<&Transform, With<Enemy>>,
     assets: Res<WeaponAssets>,
     time: Res<Time>,
-    mut gizmos: Gizmos,
+    gizmos: Gizmos,
 ) {
     let (player_velocity, player_trans, children) = player.into_inner();
     let player_pos = player_trans.translation;
@@ -435,7 +434,7 @@ pub fn fire_cannon(
                     if !enemies.contains(trigger.collider) {
                         return;
                     }
-                    commands.trigger_targets(Damage(50), trigger.collider);
+                    commands.trigger_targets(Damage(50.0), trigger.collider);
                     commands.entity(trigger.target()).despawn();
                 },
             );
@@ -603,8 +602,8 @@ fn fire_laser(
                                 Transform::from_xyz(closest_hit / 2.0 / 2.0, 0.0, 0.0),
                                 Collider::rectangle(closest_hit, 32.0),
                                 CollisionEventsEnabled,
-                                ContinuosDamage {
-                                    damage_per_frame: laser.damage,
+                                ContinuousDamage {
+                                    damage_per_frame: laser.damage as f64,
                                 },
                                 Sensor,
                             ));
@@ -725,7 +724,7 @@ fn fire_evil_laser(
     >,
     player: Single<(Entity, &Transform), With<Player>>,
     flagship: Option<Single<&Transform, With<FlagshipAI>>>,
-    mut laser_sprite: Query<&mut LaserBeam>,
+    laser_sprite: Query<&mut LaserBeam>,
 ) {
     use LaserFiringState as LSF;
 
@@ -794,11 +793,11 @@ fn fire_evil_laser(
                                 Transform::from_xyz(closest_hit / 2.0 / 2.0, 0.0, 0.0),
                                 Collider::rectangle(closest_hit, 128.0),
                                 CollisionEventsEnabled,
-                                ContinuosDamage {
-                                    damage_per_frame: laser.damage / 10,
+                                ContinuousDamage {
+                                    damage_per_frame: laser.damage as f64 / 10.0,
                                 },
                                 EvilContinuousDamage {
-                                    damage_per_frame: laser.damage,
+                                    damage_per_frame: laser.damage as f64,
                                 },
                                 Sensor,
                             ));
@@ -878,8 +877,8 @@ pub fn spawn_orbiters(n: usize, assets: &Res<WeaponAssets>) -> (impl Bundle, Vec
             },
             AnimatedSprite::new(30, 16, AnimationType::Repeating),
             Collider::circle(10.0),
-            ContinuosDamage {
-                damage_per_frame: 20,
+            ContinuousDamage {
+                damage_per_frame: 20.0,
             },
             CollisionEventsEnabled,
             Sensor,
@@ -1013,8 +1012,8 @@ pub fn process_blackhole_spawners(
                 Sensor,
                 StateScoped(Screen::Gameplay),
                 Collider::circle(128.0),
-                ContinuosDamage {
-                    damage_per_frame: 2,
+                ContinuousDamage {
+                    damage_per_frame: 2.0,
                 },
             ));
         }

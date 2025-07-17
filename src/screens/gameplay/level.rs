@@ -3,16 +3,13 @@
 use avian2d::prelude::*;
 use rand::Rng;
 
-use bevy::{color::palettes::css::GREEN, ecs::entity, prelude::*};
+use bevy::{color::palettes::css::GREEN, prelude::*};
 
 use crate::{
     asset_tracking::LoadResource,
     menus::Menu,
     screens::{
-        gameplay::{
-            enemies::{gen_asteroid, gen_flagship, gen_goon, gen_rammer, EntityAssets},
-            upgrade_menu::generate_buy_menu,
-        },
+        gameplay::enemies::{gen_asteroid, gen_flagship, gen_goon, gen_rammer, EntityAssets},
         Screen,
     },
 };
@@ -32,7 +29,7 @@ pub(super) fn plugin(app: &mut App) {
     app.register_type::<UIAssets>();
     app.load_resource::<UIAssets>();
 
-    app.add_systems(Update, world_update.in_set(GameplayLogic));
+    app.add_systems(FixedUpdate, world_update.in_set(GameplayLogic));
 }
 
 const LVL1X: f32 = 2000.0;
@@ -759,7 +756,7 @@ pub fn spawn_enemy(
                          trans: Query<&Transform, With<RammerAI>>,
                          player: Single<Entity, With<Player>>,
                          assets: Res<EntityAssets>| {
-                            commands.trigger_targets(Damage(30), trigger.collider);
+                            commands.trigger_targets(Damage(30.0), trigger.collider);
                             commands.get_entity(trigger.target()).unwrap().despawn();
                             commands.spawn((
                                 trans.get(trigger.target()).unwrap().clone(),
@@ -787,7 +784,7 @@ pub fn spawn_enemy(
                          trans: Query<&Transform, With<RammerAI>>,
                          player: Single<Entity, With<Player>>,
                          assets: Res<EntityAssets>| {
-                            commands.trigger_targets(Damage(30), trigger.collider);
+                            commands.trigger_targets(Damage(30.0), trigger.collider);
                             //commands.get_entity(trigger.target()).unwrap().despawn();
                             commands.spawn((
                                 trans.get(trigger.target()).unwrap().clone(),

@@ -3,7 +3,7 @@ use std::{f32::consts::PI, time::Instant};
 use avian2d::prelude::*;
 use bevy::{math::VectorSpace, prelude::*};
 
-use crate::{asset_tracking::LoadResource, PausableSystems};
+use crate::asset_tracking::LoadResource;
 
 use super::{
     animation::AnimatedSprite,
@@ -36,7 +36,7 @@ pub(super) fn plugin(app: &mut App) {
     app.load_resource::<EntityAssets>();
 
     app.add_systems(
-        Update,
+        FixedUpdate,
         (
             process_goon_ai,
             process_rammer_ai,
@@ -203,7 +203,7 @@ pub fn gen_asteroid(assets: &EntityAssets, position: Vec2, init_velocity: Vec2) 
     (
         gen_enemy(asteroid, assets, init_velocity),
         AsteroidAI,
-        Health(250),
+        Health(250.0),
     )
 }
 
@@ -241,7 +241,7 @@ pub fn gen_rammer(
         LinearDamping(0.8),
         AngularDamping(0.1),
         CollisionEventsEnabled,
-        Health(50),
+        Health(50.0),
     )
 }
 
@@ -378,14 +378,14 @@ impl FromWorld for EntityAssets {
     }
 }
 
-#[derive(Component, Debug, Copy, Clone, PartialEq, Eq)]
-pub struct ContinuosDamage {
-    pub damage_per_frame: usize,
+#[derive(Component, Debug, Copy, Clone)]
+pub struct ContinuousDamage {
+    pub damage_per_frame: f64,
 }
 
 pub fn cont_damage_update(
     mut commands: Commands,
-    damage_zones: Query<(&ContinuosDamage, Entity)>,
+    damage_zones: Query<(&ContinuousDamage, Entity)>,
     enemies: Query<Entity, With<Enemy>>,
     collisions: Collisions,
 ) {
@@ -394,15 +394,15 @@ pub fn cont_damage_update(
         for one_collision in currently_colliding {
             let collision_target = one_collision.body2.unwrap();
             if enemies.contains(collision_target) {
-                commands.trigger_targets(Damage(damage.damage_per_frame as i32), collision_target);
+                commands.trigger_targets(Damage(damage.damage_per_frame), collision_target);
             }
         }
     }
 }
 
-#[derive(Component, Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Component, Debug, Copy, Clone, PartialEq)]
 pub struct EvilContinuousDamage {
-    pub damage_per_frame: usize,
+    pub damage_per_frame: f64,
 }
 
 pub fn evil_cont_damage_update(
@@ -416,7 +416,7 @@ pub fn evil_cont_damage_update(
         for one_collision in currently_colliding {
             let collision_target = one_collision.body2.unwrap();
             if stuff_to_hit.contains(collision_target) {
-                commands.trigger_targets(Damage(damage.damage_per_frame as i32), collision_target);
+                commands.trigger_targets(Damage(damage.damage_per_frame), collision_target);
             }
         }
     }
