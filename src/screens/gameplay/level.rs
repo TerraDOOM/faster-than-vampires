@@ -16,7 +16,7 @@ use crate::{
 
 use super::{
     combat::{weapons::EvilLaser, Damage, Health},
-    enemies::{FlagshipAI, RammerAI, ShipType},
+    enemies::{gen_shooter, FlagshipAI, RammerAI, ShipType},
     player::{gen_player, Player, PlayerAssets},
     upgrade_menu::{UpgradeTypes, Upgrades},
     GameplayLogic,
@@ -770,13 +770,13 @@ pub fn spawn_enemy(
                     .spawn((
                         Name::new("Rammer"),
                         StateScoped(Screen::Gameplay),
-                        gen_rammer(
-                            &entity_assets,
-                            position,
-                            Vec2::ZERO,
-                            ship_type_for_look,
-                            relative_postion.to_angle() + 3.14 / 2.0,
-                        ),
+                        gen_shooter(&entity_assets, position), // gen_rammer(
+                                                               //     &entity_assets,
+                                                               //     position,
+                                                               //     Vec2::ZERO,
+                                                               //     ship_type_for_look,
+                                                               //     relative_postion.to_angle() + 3.14 / 2.0,
+                                                               // ),
                     ))
                     .observe(
                         |trigger: Trigger<OnCollisionStart>,

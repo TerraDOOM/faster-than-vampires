@@ -107,7 +107,7 @@ pub fn gen_goon(assets: &EntityAssets, position: Vec2) -> impl Bundle {
     println!("goon generated");
     let ship = Ship {
         shiptype: ShipType::EmpireGoon,
-        position: position,
+        position,
     };
 
     (gen_enemy(ship, assets, Vec2::new(0.0, 0.0)), GoonAI)
@@ -190,11 +190,26 @@ pub struct AsteroidAI;
 pub fn gen_asteroid(assets: &EntityAssets, position: Vec2, init_velocity: Vec2) -> impl Bundle {
     let asteroid = Ship {
         shiptype: ShipType::Asteroid,
-        position: position,
+        position,
     };
     (
         gen_enemy(asteroid, assets, init_velocity),
         AsteroidAI,
+        Health(250.0),
+    )
+}
+
+pub fn gen_shooter(assets: &EntityAssets, position: Vec2) -> impl Bundle {
+    let ship = Ship {
+        shiptype: ShipType::EmpireGoon,
+        position,
+    };
+    (
+        gen_enemy(ship, assets, Vec2::ZERO),
+        BasicShooter::Moving,
+        ExternalTorque::new(0.0).with_persistence(false),
+        LinearDamping(0.1),
+        AngularDamping(0.1),
         Health(250.0),
     )
 }
@@ -214,7 +229,7 @@ pub fn gen_rammer(
 ) -> impl Bundle {
     let rammer = Ship {
         shiptype: ship_look,
-        position: position,
+        position,
     };
     (
         gen_enemy_trans(
