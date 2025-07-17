@@ -1,7 +1,7 @@
-use std::{f32::consts::PI, time::Instant};
+use std::f32::consts::PI;
 
 use avian2d::prelude::*;
-use bevy::{math::VectorSpace, prelude::*};
+use bevy::prelude::*;
 
 use crate::asset_tracking::LoadResource;
 
@@ -18,7 +18,6 @@ pub enum ShipType {
     Flagship,
     EmpireGoon,
     PirateShip,
-    Outpoust,
     Asteroid,
     Rammer,
 }
@@ -27,8 +26,6 @@ pub enum ShipType {
 pub struct Ship {
     pub shiptype: ShipType,
     pub position: Vec2,
-    pub lifetime: Instant,
-    pub weapons: Vec<()>,
 }
 
 pub(super) fn plugin(app: &mut App) {
@@ -110,8 +107,6 @@ pub fn gen_goon(assets: &EntityAssets, position: Vec2) -> impl Bundle {
     let ship = Ship {
         shiptype: ShipType::EmpireGoon,
         position: position,
-        lifetime: Instant::now(),
-        weapons: Vec::new(),
     };
 
     (gen_enemy(ship, assets, Vec2::new(0.0, 0.0)), GoonAI)
@@ -124,9 +119,7 @@ pub fn gen_flagship(assets: &EntityAssets) -> impl Bundle {
 
     let flagship = Ship {
         shiptype: ShipType::Flagship,
-        lifetime: Instant::now(),
         position,
-        weapons: Vec::new(),
     };
 
     (
@@ -197,8 +190,6 @@ pub fn gen_asteroid(assets: &EntityAssets, position: Vec2, init_velocity: Vec2) 
     let asteroid = Ship {
         shiptype: ShipType::Asteroid,
         position: position,
-        lifetime: Instant::now(),
-        weapons: Vec::new(),
     };
     (
         gen_enemy(asteroid, assets, init_velocity),
@@ -223,8 +214,6 @@ pub fn gen_rammer(
     let rammer = Ship {
         shiptype: ship_look,
         position: position,
-        lifetime: Instant::now(),
-        weapons: Vec::new(),
     };
     (
         gen_enemy_trans(

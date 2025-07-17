@@ -9,7 +9,7 @@ mod upgrade_menu;
 mod animation;
 
 use avian2d::{
-    prelude::{Gravity, Physics},
+    prelude::{Gravity, Physics, PhysicsDebugPlugin},
     schedule::PhysicsTime,
 };
 use bevy::{input::common_conditions::input_just_pressed, prelude::*, ui::Val::*};
@@ -29,6 +29,7 @@ pub(super) fn plugin(app: &mut App) {
         upgrade_menu::plugin,
         combat::plugin,
         animation::plugin,
+        PhysicsDebugPlugin::default(),
     ));
 
     app.add_systems(OnEnter(Screen::Gameplay), spawn_level);

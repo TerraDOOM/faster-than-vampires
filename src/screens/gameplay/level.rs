@@ -708,22 +708,23 @@ pub fn spawn_enemy(
     player_pos: Vec3,
     spawn_patter: SpawnPatterns,
 ) {
-    let mut rng = rand::thread_rng();
-    if 0 == rng.gen_range(0..spawnrate) {
+    let mut rng = rand::rng();
+    if 0 == rng.random_range(0..spawnrate) {
         let rand_angle = match spawn_patter {
-            SpawnPatterns::Circle => (rng.gen_range(0..360) as f32 / 180.0 * 3.14) as f32,
-            SpawnPatterns::Bot => (rng.gen_range(135..225) as f32 / 180.0 * 3.14) as f32,
-            SpawnPatterns::Top => (rng.gen_range(135..225) as f32 / 180.0 * 3.14 + 135.0) as f32,
-            SpawnPatterns::Right => (rng.gen_range(45..135) as f32 / 180.0 * 3.14) as f32,
-            _ => (rng.gen_range(45..135) as f32 / 180.0 * 3.14) as f32,
+            SpawnPatterns::Circle => (rng.random_range(0..360) as f32 / 180.0 * 3.14) as f32,
+            SpawnPatterns::Bot => (rng.random_range(135..225) as f32 / 180.0 * 3.14) as f32,
+            SpawnPatterns::Top => (rng.random_range(135..225) as f32 / 180.0 * 3.14 + 135.0) as f32,
+            SpawnPatterns::Right => (rng.random_range(45..135) as f32 / 180.0 * 3.14) as f32,
         };
 
         let relative_postion = Vec2::new(rand_angle.sin(), rand_angle.cos()) * 900.0;
         let position = Vec2::new(player_pos.x, player_pos.y) + relative_postion;
 
-        let rand_deviation =
-            Vec2::new(rng.gen_range(-10..10) as f32, rng.gen_range(-10..10) as f32) / 20.0;
-        let rand_speed = (rng.gen_range(100..300) as f32) / 1500.0;
+        let rand_deviation = Vec2::new(
+            rng.random_range(-10..10) as f32,
+            rng.random_range(-10..10) as f32,
+        ) / 20.0;
+        let rand_speed = (rng.random_range(100..300) as f32) / 1500.0;
 
         match ship_type_for_ai {
             ShipType::Asteroid => {
@@ -754,7 +755,6 @@ pub fn spawn_enemy(
                         |trigger: Trigger<OnCollisionStart>,
                          mut commands: Commands,
                          trans: Query<&Transform, With<RammerAI>>,
-                         player: Single<Entity, With<Player>>,
                          assets: Res<EntityAssets>| {
                             commands.trigger_targets(Damage(30.0), trigger.collider);
                             commands.get_entity(trigger.target()).unwrap().despawn();
@@ -781,8 +781,8 @@ pub fn spawn_enemy(
                     .observe(
                         |trigger: Trigger<OnCollisionStart>,
                          mut commands: Commands,
+
                          trans: Query<&Transform, With<RammerAI>>,
-                         player: Single<Entity, With<Player>>,
                          assets: Res<EntityAssets>| {
                             commands.trigger_targets(Damage(30.0), trigger.collider);
                             //commands.get_entity(trigger.target()).unwrap().despawn();

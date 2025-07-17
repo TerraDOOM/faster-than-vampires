@@ -123,13 +123,8 @@ fn update_camera(
         Query<(&mut Transform, &Planet)>,
     )>,
 ) {
-    let p = {
-        if let player = set.p1().single_inner().unwrap() {
-            player.translation.xy()
-        } else {
-            return;
-        }
-    };
+    let p = set.p1().single_inner().unwrap().translation.xy();
+
     let camera_layer = {
         let mut camera = set.p0().single_inner().unwrap();
         camera.translation.x = p.x;

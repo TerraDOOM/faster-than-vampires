@@ -27,6 +27,7 @@ use super::Damage;
 pub fn plugin(app: &mut App) {
     app.register_type::<WeaponAssets>();
     app.load_resource::<WeaponAssets>();
+
     app.add_systems(
         Update,
         (
@@ -363,7 +364,6 @@ pub fn spawn_e_field(assets: &Res<WeaponAssets>, n: usize) -> Vec<impl Bundle> {
 #[derive(Component)]
 pub struct Laser {
     firing: bool,
-    level: usize,
     damage: usize,
     fire: Duration,
     cooldown: Duration,
@@ -380,7 +380,6 @@ pub fn fire_cannon(
     enemies: Query<&Transform, With<Enemy>>,
     assets: Res<WeaponAssets>,
     time: Res<Time>,
-    gizmos: Gizmos,
 ) {
     let (player_velocity, player_trans, children) = player.into_inner();
     let player_pos = player_trans.translation;
@@ -495,7 +494,6 @@ pub fn spawn_laser(level: usize) -> impl Bundle {
         Transform::from_translation(Vec3::new(0.0, 16.0, 0.0)),
         Laser {
             firing: true,
-            level,
             fire,
             damage: 100,
             cooldown,
@@ -724,7 +722,6 @@ fn fire_evil_laser(
     >,
     player: Single<(Entity, &Transform), With<Player>>,
     flagship: Option<Single<&Transform, With<FlagshipAI>>>,
-    laser_sprite: Query<&mut LaserBeam>,
 ) {
     use LaserFiringState as LSF;
 
@@ -915,9 +912,6 @@ pub struct Blackhole {
     timer: Timer,
 }
 
-const FORMATION_TIME: u64 = 5;
-const SUCK_TIME: u64 = 30;
-
 #[derive(Component)]
 pub struct BlackholeSpawner {
     pub timer: Timer,
@@ -936,6 +930,8 @@ pub fn process_blackholes(
     )>,
     mut enemies: Query<(&Transform, &mut ExternalForce), With<Enemy>>,
 ) {
+    const SUCK_TIME: u64 = 30;
+
     for (ent, mut bh, mut bh_sprite, mut animation, bh_location) in bh {
         bh.timer.tick(time.delta());
         if bh.timer.finished() {
@@ -970,8 +966,6 @@ pub fn process_blackholes(
     }
 }
 
-const MS_PER_FRAME: usize = 50;
-
 pub fn process_blackhole_spawners(
     time: Res<Time>,
     bh: Query<&mut BlackholeSpawner>,
@@ -979,6 +973,9 @@ pub fn process_blackhole_spawners(
     assets: Res<WeaponAssets>,
     mut commands: Commands,
 ) {
+    const MS_PER_ANIMATION_FRAME: usize = 50;
+    const FORMATION_TIME: u64 = 5;
+
     let mut rng = rand::rng();
 
     let dx = rng.random_range(-800.0..800.0);
@@ -994,7 +991,7 @@ pub fn process_blackhole_spawners(
                 Blackhole {
                     state: BlackholeState::Forming,
                     timer: Timer::new(
-                        Duration::from_millis(MS_PER_FRAME as u64 * 25),
+                        Duration::from_millis(MS_PER_ANIMATION_FRAME as u64 * FORMATION_TIME),
                         TimerMode::Once,
                     ),
                 },
@@ -1007,7 +1004,7 @@ pub fn process_blackhole_spawners(
                     }),
                     ..default()
                 },
-                AnimatedSprite::new(MS_PER_FRAME, 25, AnimationType::Repeating),
+                AnimatedSprite::new(MS_PER_ANIMATION_FRAME, 25, AnimationType::Repeating),
                 RigidBody::Static,
                 Sensor,
                 StateScoped(Screen::Gameplay),

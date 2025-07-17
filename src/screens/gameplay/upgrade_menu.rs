@@ -169,7 +169,6 @@ pub fn update_upgrades(
 
 pub fn draft_upgrades(
     gotten_upgrades: &HashMap<UpgradeTypes, usize>,
-    planet: PlanetType,
 ) -> (UpgradeTypes, UpgradeTypes, UpgradeTypes) {
     //use rand::seq::IndexedRandom;
 
@@ -237,7 +236,7 @@ pub fn generate_buy_menu(
     if next_planet.0 == PlanetType::EarthPlanet {
         spawn_final_shop(commands, &ui_assets);
     } else {
-        let drafted_upgrades = draft_upgrades(&upgrades.gotten_upgrades, next_planet.0);
+        let drafted_upgrades = draft_upgrades(&upgrades.gotten_upgrades);
         commands.spawn((
             Name::new("UIBox"),
             UIShop,
