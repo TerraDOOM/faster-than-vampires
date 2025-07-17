@@ -5,12 +5,7 @@ use bevy::prelude::*;
 use crate::{AppSystems, PausableSystems};
 
 pub(super) fn plugin(app: &mut App) {
-    app.add_systems(
-        Update,
-        update_animations
-            .in_set(PausableSystems)
-            .in_set(AppSystems::Update),
-    );
+    app.add_systems(Update, update_animations);
 }
 
 #[derive(Component, Debug, Clone, PartialEq, Eq)]

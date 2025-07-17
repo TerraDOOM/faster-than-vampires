@@ -1,9 +1,9 @@
-use std::f32::consts::PI;
+use std::{f32::consts::PI, time::Duration};
 
 use avian2d::prelude::*;
 use bevy::prelude::*;
 
-use crate::asset_tracking::LoadResource;
+use crate::{asset_tracking::LoadResource, screens::Screen};
 
 use super::{
     animation::AnimatedSprite,
@@ -40,6 +40,7 @@ pub(super) fn plugin(app: &mut App) {
             process_flagship_ai,
             cont_damage_update,
             evil_cont_damage_update,
+            (update_shooter_behavior, run_aiming_shooters, moving_shooter).chain(),
         )
             .in_set(GameplayLogic),
     );
@@ -408,5 +409,169 @@ pub fn evil_cont_damage_update(
                 commands.trigger_targets(Damage(damage.damage_per_frame), collision_target);
             }
         }
+    }
+}
+
+const BASIC_SHOOTER_FIRING_INTERVAL_MS: u64 = 2000;
+
+#[derive(Component, Debug, Clone)]
+enum BasicShooter {
+    Aiming { fire_clock: Timer },
+    Moving,
+}
+
+impl BasicShooter {
+    fn new_aiming() -> Self {
+        BasicShooter::Aiming {
+            fire_clock: Timer::new(
+                Duration::from_millis(BASIC_SHOOTER_FIRING_INTERVAL_MS),
+                TimerMode::Repeating,
+            ),
+        }
+    }
+}
+
+fn update_shooter_behavior(
+    shooters: Query<(
+        &Transform,
+        &mut BasicShooter,
+        &mut LinearDamping,
+        &mut AngularDamping,
+    )>,
+    player: Single<&Transform, With<Player>>,
+) {
+    let player_pos = player.into_inner();
+
+    for (pos, mut enemy, mut damping, mut ang_damping) in shooters {
+        match check_shooter_dist(pos, player_pos, &*enemy) {
+            Some(new @ BasicShooter::Aiming { .. }) => {
+                **damping = 100.0;
+                *enemy = new;
+            }
+            Some(new @ BasicShooter::Moving) => {
+                **ang_damping = 2.0;
+                **damping = 2.0;
+                *enemy = new;
+            }
+            _ => {}
+        }
+    }
+}
+
+fn run_aiming_shooters(
+    mut commands: Commands,
+    time: Res<Time>,
+    shooters: Query<(
+        &Transform,
+        &mut BasicShooter,
+        &mut ExternalTorque,
+        &mut AngularDamping,
+    )>,
+    player: Single<&Transform, With<Player>>,
+) {
+    let pos = |t: &Transform| t.translation.xy();
+    let player = player.into_inner();
+    for (enemy, mut shooter, mut torque, mut damping) in shooters {
+        let BasicShooter::Aiming { fire_clock } = &mut *shooter else {
+            continue;
+        };
+        fire_clock.tick(time.delta());
+        if rotate_towards(enemy, player, &mut *torque, 300.0) {
+            **damping = 100.0;
+
+            if fire_clock.finished() {
+                shooter_fire(&mut commands, enemy, pos(player));
+                fire_clock.reset();
+            }
+        } else {
+            **damping = 2.0;
+        }
+    }
+}
+
+fn shooter_fire(commands: &mut Commands, shooter: &Transform, player_pos: Vec2) {
+    commands
+        .spawn((
+            Sprite::from_color(Color::srgba(1.0, 0.0, 0.0, 1.0), Vec2::splat(30.0)),
+            StateScoped(Screen::Gameplay),
+            shooter.clone(),
+            Collider::circle(10.0),
+            Sensor,
+            RigidBody::Kinematic,
+            CollisionEventsEnabled,
+            LinearVelocity((player_pos - shooter.translation.xy()).normalize() * 20.0),
+        ))
+        .observe(shooter_bullet_hit);
+}
+
+fn shooter_bullet_hit(
+    trigger: Trigger<OnCollisionStart>,
+    mut commands: Commands,
+    player: Single<Entity, With<Player>>,
+) {
+    let player = player.into_inner();
+    if player == trigger.collider {
+        commands.trigger_targets(Damage(20.0), player);
+        commands.entity(trigger.target()).despawn();
+    }
+}
+
+fn rotate_towards(
+    a: &Transform,
+    b: &Transform,
+    torque: &mut ExternalTorque,
+    rotation_speed: f32,
+) -> bool {
+    let pos = |t: &Transform| t.translation.xy();
+
+    let a_forward = (a.rotation * Vec3::Y).xy();
+    let to_b = (pos(b) - pos(a)).normalize();
+
+    // Get the dot product between the a forward vector and the direction to the player.
+    let forward_dot_b = a_forward.dot(to_b);
+    if (forward_dot_b - 1.0).abs() < 0.001 {
+        return true;
+    }
+
+    let a_right = (a.rotation * Vec3::X).xy();
+    let right_dot_b = a_right.dot(to_b);
+    let rotation_sign = -f32::copysign(1.0, right_dot_b);
+
+    torque.apply_torque(rotation_sign * rotation_speed);
+    false
+}
+
+fn moving_shooter(
+    shooters: Query<(
+        &Transform,
+        &BasicShooter,
+        &mut ExternalImpulse,
+        &mut ExternalTorque,
+    )>,
+    player: Single<&Transform, With<Player>>,
+) {
+    let player = player.into_inner();
+    for (enemy, shooter, mut impulse, mut torque) in shooters {
+        let BasicShooter::Moving = shooter else {
+            continue;
+        };
+        let forward = (enemy.rotation * Vec3::Y).xy();
+        rotate_towards(enemy, player, &mut *torque, 300.0);
+        impulse.apply_impulse(forward * 20.0);
+    }
+}
+
+// update a basic shooter and return whether it changed state
+fn check_shooter_dist(
+    pos: &Transform,
+    player: &Transform,
+    shooter: &BasicShooter,
+) -> Option<BasicShooter> {
+    let dist = pos.translation.distance(player.translation);
+
+    match shooter {
+        BasicShooter::Moving if dist <= 700.0 => Some(BasicShooter::new_aiming()),
+        BasicShooter::Aiming { .. } if dist >= 900.0 => Some(BasicShooter::Moving),
+        _ => None,
     }
 }
