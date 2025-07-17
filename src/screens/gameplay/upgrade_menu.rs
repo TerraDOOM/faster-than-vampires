@@ -10,7 +10,7 @@ use super::{
         Health,
     },
     enemies::FlagshipAI,
-    level::{MainOST, PlanetType, UIAssets, VisistedPlanet},
+    level::{self, MainOST, PlanetType, UIAssets, UpgradeBox, UpgradeTile, VisistedPlanet},
     player::Player,
     GameplayLogic,
 };
@@ -510,6 +510,10 @@ fn button_system(
     >,
     upgrades: Single<&mut Upgrades, Without<UIShop>>,
     next_menu: ResMut<NextState<Menu>>,
+    commands: Commands,
+    ui_assets: Res<UIAssets>,
+    ui_box: Single<(&mut UpgradeBox, Entity)>,
+    upgrade_tiles: Query<(&mut UpgradeTile, &mut Text)>,
 ) {
     for (interaction, mut color, ui_shop_button) in &mut interaction_query {
         match *interaction {
@@ -522,6 +526,13 @@ fn button_system(
                     .or_insert(0);
                 *upgrade_lvl += 1;
                 println!("Current level is: {}", (*upgrade_lvl));
+                level::add_upgrade(
+                    ui_shop_button.upgrade,
+                    commands,
+                    ui_assets,
+                    ui_box,
+                    upgrade_tiles,
+                );
                 //handle_upgrade();
                 go_back(next_menu);
                 return;

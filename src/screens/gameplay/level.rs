@@ -1,5 +1,7 @@
 //! Spawn the main level.
 
+use std::collections::HashMap;
+
 use avian2d::prelude::*;
 use rand::Rng;
 
@@ -29,6 +31,7 @@ pub(super) fn plugin(app: &mut App) {
     app.register_type::<UIAssets>();
     app.load_resource::<UIAssets>();
 
+    app.add_systems(Update, (ui_update, hp_bar_update).in_set(GameplayLogic));
     app.add_systems(FixedUpdate, world_update.in_set(GameplayLogic));
 }
 
@@ -86,6 +89,24 @@ pub struct UIAssets {
     pub mini_map: Handle<Image>,
     #[dependency]
     pub enter_shop: Handle<AudioSource>,
+    #[dependency]
+    pub danger: Handle<Image>,
+    #[dependency]
+    pub icon_background: Handle<Image>,
+    #[dependency]
+    pub icon_hull: Handle<Image>,
+    #[dependency]
+    pub icon_thruster: Handle<Image>,
+    #[dependency]
+    pub icon_cannon: Handle<Image>,
+    #[dependency]
+    pub icon_e_field: Handle<Image>,
+    #[dependency]
+    pub icon_emp: Handle<Image>,
+    #[dependency]
+    pub icon_balls: Handle<Image>,
+    #[dependency]
+    pub icon_hole: Handle<Image>,
 }
 
 impl FromWorld for UIAssets {
@@ -95,6 +116,17 @@ impl FromWorld for UIAssets {
         Self {
             font: assets.load("FiraSans.ttf"),
             exclamation: assets.load_with_settings("images/entities/Point.png", make_nearest),
+            danger: assets.load_with_settings("images/ui/danger.png", make_nearest),
+            icon_background: assets
+                .load_with_settings("images/ui/icon_background.png", make_nearest),
+            icon_hull: assets.load_with_settings("images/ui/Hull.png", make_nearest),
+            icon_thruster: assets.load_with_settings("images/ui/rocket2.png", make_nearest),
+            icon_cannon: assets.load_with_settings("images/ui/gun2.png", make_nearest),
+            icon_emp: assets.load_with_settings("images/ui/EMP.png", make_nearest),
+            icon_e_field: assets.load_with_settings("images/ui/E-field.png", make_nearest),
+            icon_balls: assets.load_with_settings("images/ui/Balls.png", make_nearest),
+            icon_hole: assets.load_with_settings("images/ui/Back_hole.png", make_nearest),
+
             button1: assets.load_with_settings("images/ui/Main_button_clicked.png", make_nearest),
             button2: assets.load_with_settings("images/ui/Main_button_unclicked.png", make_nearest),
             mini_map: assets.load_with_settings("images/level/Map.png", make_nearest),
@@ -191,7 +223,7 @@ pub fn spawn_level(
             Visibility::default(),
             StateScoped(Screen::Gameplay),
             children![
-                gen_player(400.0, &player_assets),
+                gen_player(500.0, &player_assets),
                 gen_planet(
                     &level_assets,
                     &ui_assets,
@@ -279,7 +311,9 @@ pub fn spawn_level(
                 });
         });
 
-    commands.spawn(gen_ui(&ui_assets));
+    commands.spawn(gen_ui_box(&ui_assets));
+    commands.spawn(gen_ui_upgrades(&ui_assets));
+    commands.spawn(gen_ui_misc(&ui_assets));
 }
 
 #[repr(usize)]
@@ -394,6 +428,26 @@ pub struct UIBox;
 
 #[derive(Component, Debug, Clone, Copy, PartialEq, Eq, Default, Reflect)]
 #[reflect(Component)]
+pub struct UIMisc;
+
+#[derive(Component, Debug, Clone, Copy, PartialEq, Eq, Default, Reflect)]
+#[reflect(Component)]
+pub struct DangerMarker;
+
+#[derive(Component, Debug, Clone, PartialEq, Eq, Default, Reflect)]
+#[reflect(Component)]
+pub struct UpgradeBox {
+    pub rendered_upgrades: HashMap<UpgradeTypes, usize>,
+}
+
+#[derive(Component, Debug, Clone, PartialEq, Eq, Default, Reflect)]
+#[reflect(Component)]
+pub struct UpgradeTile {
+    pub my_upgrade: UpgradeTypes,
+}
+
+#[derive(Component, Debug, Clone, Copy, PartialEq, Eq, Default, Reflect)]
+#[reflect(Component)]
 pub struct UIPosition;
 
 #[derive(Component, Debug, Clone, Copy, PartialEq, Eq, Default, Reflect)]
@@ -415,7 +469,7 @@ pub struct MiniMapRed;
 #[reflect(Component)]
 pub struct MiniMapPos;
 
-pub fn gen_ui(ui_assets: &Res<UIAssets>) -> impl Bundle {
+pub fn gen_ui_box(ui_assets: &Res<UIAssets>) -> impl Bundle {
     (
         Name::new("UIBox"),
         UIBox,
@@ -522,49 +576,287 @@ pub fn gen_ui(ui_assets: &Res<UIAssets>) -> impl Bundle {
     )
 }
 
+pub fn gen_ui_upgrades(ui_assets: &Res<UIAssets>) -> impl Bundle {
+    (
+        StateScoped(Screen::Gameplay),
+        UpgradeBox {
+            rendered_upgrades: HashMap::from([
+                (UpgradeTypes::Cannon, 1),
+                (UpgradeTypes::Health, 1),
+                (UpgradeTypes::Thrusters, 1),
+            ]),
+        },
+        Node {
+            width: Val::Px(300.0),
+            height: Val::Percent(100.0),
+            top: Val::Percent(15.0),
+            left: Val::Percent(80.0),
+            flex_direction: FlexDirection::Column,
+            ..default()
+        },
+        children![
+            (
+                Node {
+                    width: Val::Px(96.0),
+                    height: Val::Px(96.0),
+                    ..default()
+                },
+                ImageNode {
+                    image: ui_assets.icon_background.clone(),
+                    ..default()
+                },
+                children![
+                    ImageNode {
+                        image: ui_assets.icon_hull.clone(),
+                        ..default()
+                    },
+                    (
+                        UpgradeTile {
+                            my_upgrade: UpgradeTypes::Health
+                        },
+                        Node {
+                            top: Val::Px(16.0),
+                            ..default()
+                        },
+                        Text::new("1"),
+                        TextFont {
+                            font: ui_assets.font.clone(),
+                            font_size: 33.0,
+                            ..default()
+                        },
+                        TextColor(Color::srgb(1.0, 1.0, 1.0)),
+                    )
+                ]
+            ),
+            (
+                Node {
+                    width: Val::Px(96.0),
+                    height: Val::Px(96.0),
+                    left: Val::Px(42.0),
+                    top: Val::Px(-24.0),
+                    ..default()
+                },
+                ImageNode {
+                    image: ui_assets.icon_background.clone(),
+                    ..default()
+                },
+                children![
+                    ImageNode {
+                        image: ui_assets.icon_thruster.clone(),
+                        ..default()
+                    },
+                    (
+                        UpgradeTile {
+                            my_upgrade: UpgradeTypes::Thrusters
+                        },
+                        Node {
+                            top: Val::Px(16.0),
+                            ..default()
+                        },
+                        Text::new("1"),
+                        TextFont {
+                            font: ui_assets.font.clone(),
+                            font_size: 33.0,
+                            ..default()
+                        },
+                        TextColor(Color::srgb(1.0, 1.0, 1.0)),
+                    )
+                ]
+            ),
+            (
+                Node {
+                    width: Val::Px(96.0),
+                    height: Val::Px(96.0),
+                    top: Val::Px(-48.0),
+                    ..default()
+                },
+                ImageNode {
+                    image: ui_assets.icon_background.clone(),
+                    ..default()
+                },
+                children![
+                    ImageNode {
+                        image: ui_assets.icon_cannon.clone(),
+                        ..default()
+                    },
+                    (
+                        UpgradeTile {
+                            my_upgrade: UpgradeTypes::Cannon
+                        },
+                        Node {
+                            top: Val::Px(16.0),
+                            ..default()
+                        },
+                        Text::new("1"),
+                        TextFont {
+                            font: ui_assets.font.clone(),
+                            font_size: 33.0,
+                            ..default()
+                        },
+                        TextColor(Color::srgb(1.0, 1.0, 1.0)),
+                    )
+                ]
+            ),
+        ],
+    )
+}
+
+pub fn add_upgrade(
+    upgrade: UpgradeTypes,
+    mut commands: Commands,
+    ui_assets: Res<UIAssets>,
+    ui_box: Single<(&mut UpgradeBox, Entity)>,
+    mut upgrade_tiles: Query<(&mut UpgradeTile, &mut Text)>,
+) {
+    let (mut ui_data, entity) = ui_box.into_inner();
+
+    if ui_data.rendered_upgrades.contains_key(&upgrade) {
+        *ui_data.rendered_upgrades.get_mut(&upgrade).unwrap() += 1;
+
+        if let Some(mut x) = upgrade_tiles.iter_mut().find(|x| x.0.my_upgrade == upgrade) {
+            **x.1 = ui_data.rendered_upgrades.get(&upgrade).unwrap().to_string();
+        } else {
+            panic!();
+        }
+
+        //Edit children
+    } else {
+        let hexagoncount = ui_data.rendered_upgrades.len();
+        ui_data.rendered_upgrades.insert(upgrade.clone(), 1);
+        //Add children
+        let mut ui_box_entity = commands.get_entity(entity).unwrap();
+        ui_box_entity.with_child((
+            Node {
+                width: Val::Px(96.0),
+                height: Val::Px(96.0),
+                left: Val::Px(if hexagoncount % 2 == 0 { 0.0 } else { 48.0 }),
+                top: Val::Px(-26.0 * hexagoncount as f32),
+                ..default()
+            },
+            ImageNode {
+                image: ui_assets.icon_background.clone(),
+                ..default()
+            },
+            children![
+                ImageNode {
+                    image: match upgrade {
+                        UpgradeTypes::Cannon => ui_assets.icon_cannon.clone(),
+                        UpgradeTypes::Health => ui_assets.icon_hull.clone(),
+                        UpgradeTypes::Thrusters => ui_assets.icon_thruster.clone(),
+                        UpgradeTypes::Electricity => ui_assets.icon_e_field.clone(),
+                        UpgradeTypes::BlackHole => ui_assets.icon_hole.clone(),
+                        UpgradeTypes::Orb => ui_assets.icon_balls.clone(),
+                        UpgradeTypes::Emp => ui_assets.icon_emp.clone(),
+                        _ => ui_assets.icon_hull.clone(),
+                    },
+                    ..default()
+                },
+                (
+                    UpgradeTile {
+                        my_upgrade: upgrade
+                    },
+                    Node {
+                        top: Val::Px(16.0),
+                        ..default()
+                    },
+                    Text::new("1"),
+                    TextFont {
+                        font: ui_assets.font.clone(),
+                        font_size: 33.0,
+                        ..default()
+                    },
+                    TextColor(Color::srgb(1.0, 1.0, 1.0)),
+                )
+            ],
+        ));
+    }
+}
+
+pub fn gen_ui_misc(ui_assets: &Res<UIAssets>) -> impl Bundle {
+    (
+        Name::new("misc UI"),
+        UIMisc,
+        StateScoped(Screen::Gameplay),
+        Node {
+            width: Val::Percent(100.0),
+            height: Val::Percent(100.0),
+            right: Val::Vw(0.0),
+            align_items: AlignItems::Center,
+            justify_content: JustifyContent::FlexStart,
+            flex_direction: FlexDirection::Row,
+            ..default()
+        },
+        ZIndex(2),
+        children![(
+            DangerMarker,
+            Node {
+                width: Val::Px(196.0),
+                height: Val::Px(196.0),
+                top: Val::Percent(30.0),
+                left: Val::Percent(5.0),
+                ..default()
+            },
+            ImageNode {
+                image: ui_assets.danger.clone(),
+                ..default()
+            },
+        ),],
+    )
+}
+
+pub fn hp_bar_update(
+    player: Single<(&Health, &Upgrades), With<Player>>,
+    mut hp_bar: Single<&mut Node, (With<HPBar>, Without<HPBarAnti>)>,
+    mut anti_hp_bar: Single<&mut Node, (With<HPBarAnti>, Without<HPBar>)>,
+) {
+    let (health, upgrades) = player.into_inner();
+    let hp_max = (*upgrades
+        .gotten_upgrades
+        .get(&UpgradeTypes::Health)
+        .clone()
+        .unwrap()) as f32
+        * 100.0;
+    let hp_width = (health.0 as f32 / hp_max * 40.0).max(0.0);
+    hp_bar.width = Val::Percent(hp_width);
+    anti_hp_bar.width = Val::Percent(40.0 - hp_width);
+}
+
+pub fn ui_update(
+    player: Single<&Transform, With<Player>>,
+    flagship: Single<&Transform, With<FlagshipAI>>,
+    mut ui_position: Single<&mut Text, With<UIPosition>>,
+    mut mini_map_enemy: Single<&mut Node, (With<MiniMapRed>, Without<MiniMapPos>)>,
+    mut mini_map_pos: Single<&mut Node, (With<MiniMapPos>, Without<MiniMapRed>)>,
+    mut exclimation_node: Single<
+        &mut Node,
+        (With<DangerMarker>, Without<MiniMapPos>, Without<MiniMapRed>),
+    >,
+) {
+    let player = player.into_inner();
+
+    //Position
+    ui_position.0 = ((player.translation.x) as i32).to_string();
+
+    //Mini-map
+    let redzone = flagship.translation.x / XSIZE * 1000.0;
+    mini_map_enemy.width = Val::Percent(redzone);
+    mini_map_pos.left = Val::Percent(player.translation.x / XSIZE * 1000.0 - redzone);
+    mini_map_pos.top = Val::Percent(45.0 - player.translation.y / YMAX * 100.0);
+
+    //Danger marker
+    exclimation_node.width = if player.translation.x - flagship.translation.x < 1500.0 {
+        Val::Px(196.0)
+    } else {
+        Val::Px(0.0)
+    };
+}
+
 pub fn world_update(
     mut commands: Commands,
     entity_assets: Res<EntityAssets>,
     mut gizmo: Gizmos,
     player: Single<(&Transform, &Health, &Upgrades), With<Player>>,
     flagship: Single<&Transform, With<FlagshipAI>>,
-    mut ui_position: Single<&mut Text, With<UIPosition>>,
-    mut hp_bar: Single<
-        &mut Node,
-        (
-            With<HPBar>,
-            Without<HPBarAnti>,
-            Without<MiniMapRed>,
-            Without<MiniMapPos>,
-        ),
-    >,
-    mut anti_hp_bar: Single<
-        &mut Node,
-        (
-            With<HPBarAnti>,
-            Without<HPBar>,
-            Without<MiniMapRed>,
-            Without<MiniMapPos>,
-        ),
-    >,
-    mut mini_map_enemy: Single<
-        &mut Node,
-        (
-            With<MiniMapRed>,
-            Without<HPBarAnti>,
-            Without<HPBar>,
-            Without<MiniMapPos>,
-        ),
-    >,
-    mut mini_map_pos: Single<
-        &mut Node,
-        (
-            With<MiniMapPos>,
-            Without<HPBarAnti>,
-            Without<HPBar>,
-            Without<MiniMapRed>,
-        ),
-    >,
     planets: Query<
         (&Transform, &mut Planet, Entity),
         (
@@ -579,21 +871,7 @@ pub fn world_update(
 ) {
     gizmo.rect_2d(Isometry2d::IDENTITY, Vec2::new(100.0, 100.0), GREEN);
 
-    let (player, health, upgrades) = player.into_inner();
-
-    //Position
-    ui_position.0 = ((player.translation.x) as i32).to_string();
-
-    //HP bar
-    let hp_max = (*upgrades
-        .gotten_upgrades
-        .get(&UpgradeTypes::Health)
-        .clone()
-        .unwrap()) as f32
-        * 100.0;
-    let hp_width = (health.0 as f32 / hp_max * 40.0).max(0.0);
-    hp_bar.width = Val::Percent(hp_width);
-    anti_hp_bar.width = Val::Percent(40.0 - hp_width);
+    let (player, _, _) = player.into_inner();
 
     //Planet collision
     for (planet_transform, mut planet, entity) in planets {
@@ -606,13 +884,6 @@ pub fn world_update(
             next_menu.set(Menu::Buy);
         }
     }
-
-    //Mini-map
-    let redzone = flagship.translation.x / XSIZE * 1000.0;
-    mini_map_enemy.width = Val::Percent(redzone);
-    mini_map_pos.left = Val::Percent(player.translation.x / XSIZE * 1000.0 - redzone);
-    mini_map_pos.top = Val::Percent(45.0 - player.translation.y / YMAX * 100.0);
-
     //mini_map[0].Node.width = Val::Percent(10.0);
 
     //Enemy spawning depending on biome
@@ -646,6 +917,16 @@ pub fn world_update(
             ShipType::EmpireGoon,
             player.translation,
             SpawnPatterns::Circle,
+        );
+    } else if player.translation.x - flagship.translation.x < 1200.0 {
+        spawn_enemy(
+            commands,
+            entity_assets,
+            2,
+            ShipType::Rammer,
+            ShipType::EmpireGoon,
+            player.translation,
+            SpawnPatterns::Left,
         );
     } else if player.translation.x < LVL3X {
         spawn_enemy(
@@ -697,6 +978,7 @@ pub enum SpawnPatterns {
     Top,
     Bot,
     Right,
+    Left,
 }
 
 pub fn spawn_enemy(
@@ -715,6 +997,7 @@ pub fn spawn_enemy(
             SpawnPatterns::Bot => (rng.random_range(135..225) as f32 / 180.0 * 3.14) as f32,
             SpawnPatterns::Top => (rng.random_range(135..225) as f32 / 180.0 * 3.14 + 135.0) as f32,
             SpawnPatterns::Right => (rng.random_range(45..135) as f32 / 180.0 * 3.14) as f32,
+            SpawnPatterns::Left => (rng.random_range(45..135) as f32 / 180.0 * 3.14 + 135.0) as f32,
         };
 
         let relative_postion = Vec2::new(rand_angle.sin(), rand_angle.cos()) * 900.0;

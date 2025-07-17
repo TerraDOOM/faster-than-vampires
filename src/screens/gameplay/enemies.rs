@@ -116,7 +116,7 @@ pub fn gen_goon(assets: &EntityAssets, position: Vec2) -> impl Bundle {
 #[derive(Component, Debug, Copy, Clone, PartialEq, Eq)]
 pub struct FlagshipAI;
 pub fn gen_flagship(assets: &EntityAssets) -> impl Bundle {
-    let position = Vec2::new(-1080.0, 0.0);
+    let position = Vec2::new(-1580.0, 0.0);
 
     let flagship = Ship {
         shiptype: ShipType::Flagship,

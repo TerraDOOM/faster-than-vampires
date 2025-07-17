@@ -55,6 +55,7 @@ pub(super) fn plugin(app: &mut App) {
             ),
         ),
     );
+
     app.add_systems(OnExit(Screen::Gameplay), (close_menu, unpause));
     app.add_systems(
         OnEnter(Menu::None),
@@ -63,6 +64,16 @@ pub(super) fn plugin(app: &mut App) {
 
     app.configure_sets(
         Update,
+        GameplayLogic.in_set(PausableSystems).run_if(
+            resource_exists::<level::LevelAssets>
+                .and(resource_exists::<player::PlayerAssets>)
+                .and(resource_exists::<enemies::EntityAssets>)
+                .and(any_with_component::<player::Player>)
+                .and(any_with_component::<Camera2d>),
+        ),
+    );
+    app.configure_sets(
+        FixedUpdate,
         GameplayLogic.in_set(PausableSystems).run_if(
             resource_exists::<level::LevelAssets>
                 .and(resource_exists::<player::PlayerAssets>)
