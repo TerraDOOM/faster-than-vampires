@@ -20,7 +20,6 @@ use crate::{
         },
         Screen,
     },
-    util::make_nearest,
 };
 
 use super::Damage;
@@ -381,7 +380,7 @@ pub fn fire_cannon(
     enemies: Query<&Transform, With<Enemy>>,
     assets: Res<WeaponAssets>,
     time: Res<Time>,
-    mut gizmos: Gizmos,
+    gizmos: Gizmos,
 ) {
     let (player_velocity, player_trans, children) = player.into_inner();
     let player_pos = player_trans.translation;
@@ -725,7 +724,7 @@ fn fire_evil_laser(
     >,
     player: Single<(Entity, &Transform), With<Player>>,
     flagship: Option<Single<&Transform, With<FlagshipAI>>>,
-    mut laser_sprite: Query<&mut LaserBeam>,
+    laser_sprite: Query<&mut LaserBeam>,
 ) {
     use LaserFiringState as LSF;
 

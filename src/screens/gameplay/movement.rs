@@ -24,7 +24,7 @@ use crate::{
 use super::{
     level::{BackgroundAccess, Planet},
     player::Player,
-    upgrade_menu::{UIShop, Upgrades},
+    upgrade_menu::Upgrades,
 };
 
 //use super::player::Player;

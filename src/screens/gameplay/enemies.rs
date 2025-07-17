@@ -3,7 +3,7 @@ use std::{f32::consts::PI, time::Instant};
 use avian2d::prelude::*;
 use bevy::{math::VectorSpace, prelude::*};
 
-use crate::{asset_tracking::LoadResource, PausableSystems};
+use crate::asset_tracking::LoadResource;
 
 use super::{
     animation::AnimatedSprite,

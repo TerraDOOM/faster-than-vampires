@@ -1,5 +1,4 @@
-use avian2d::parry::utils::hashmap;
-use bevy::{input::common_conditions::input_just_pressed, prelude::*, state::commands};
+use bevy::{input::common_conditions::input_just_pressed, prelude::*};
 use rand::seq::IndexedRandom;
 use std::collections::{HashMap, HashSet};
 
@@ -79,7 +78,7 @@ pub fn update_upgrades(
     mut commands: Commands,
     weapon_assets: Res<WeaponAssets>,
     mut hp: Single<&mut Health, With<Player>>,
-    mut flagship_entity: Single<Entity, With<FlagshipAI>>,
+    flagship_entity: Single<Entity, With<FlagshipAI>>,
     mut ost: Single<&mut AudioPlayer, With<MainOST>>,
     upgrades: Single<(Entity, &Upgrades), (With<Player>, Changed<Upgrades>)>,
 ) {
@@ -257,7 +256,7 @@ pub fn generate_buy_menu(
             ZIndex(2),
             GlobalZIndex(2),
             children![
-                ((
+                (
                     Text::new("Shop"),
                     TextFont {
                         font: ui_assets.font.clone(),
@@ -271,8 +270,8 @@ pub fn generate_buy_menu(
                         top: Val::Percent(0.0),
                         ..default()
                     },
-                )),
-                ((
+                ),
+                (
                     Node {
                         width: Val::Percent(100.0),
                         height: Val::Percent(75.0),
@@ -314,7 +313,7 @@ pub fn generate_buy_menu(
                             3
                         ),
                     ]
-                ))
+                )
             ],
         ));
     }
@@ -414,7 +413,7 @@ pub fn spawn_final_shop(mut commands: Commands, ui_assets: &Res<UIAssets>) {
         ZIndex(2),
         GlobalZIndex(2),
         children![
-            ((
+            (
                 Text::new("Empire research lab"),
                 TextFont {
                     font: ui_assets.font.clone(),
@@ -428,8 +427,8 @@ pub fn spawn_final_shop(mut commands: Commands, ui_assets: &Res<UIAssets>) {
                     top: Val::Percent(5.0),
                     ..default()
                 },
-            )),
-            ((
+            ),
+            (
                 Node {
                     width: Val::Percent(100.0),
                     height: Val::Percent(75.0),
@@ -437,7 +436,7 @@ pub fn spawn_final_shop(mut commands: Commands, ui_assets: &Res<UIAssets>) {
                     ..default()
                 },
                 children![gen_final_shop_item(ui_assets)]
-            ))
+            )
         ],
     ));
 }
@@ -511,14 +510,14 @@ fn button_system(
         Changed<Interaction>,
     >,
     upgrades: Single<&mut Upgrades, Without<UIShop>>,
-    mut next_menu: ResMut<NextState<Menu>>,
+    next_menu: ResMut<NextState<Menu>>,
 ) {
     for (interaction, mut color, ui_shop_button) in &mut interaction_query {
         match *interaction {
             Interaction::Pressed => {
                 *color = BackgroundColor(Color::srgb(0.5, 0.5, 0.5));
                 let mut hashmap = upgrades.into_inner();
-                let mut upgrade_lvl = hashmap
+                let upgrade_lvl = hashmap
                     .gotten_upgrades
                     .entry(ui_shop_button.upgrade)
                     .or_insert(0);

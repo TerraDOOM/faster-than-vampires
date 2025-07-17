@@ -3,7 +3,6 @@ use bevy::prelude::*;
 
 pub mod weapons;
 
-use crate::{screens::Screen, PausableSystems};
 
 use super::{
     enemies::AsteroidAI,

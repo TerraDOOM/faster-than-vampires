@@ -3,16 +3,13 @@
 use avian2d::prelude::*;
 use rand::Rng;
 
-use bevy::{color::palettes::css::GREEN, ecs::entity, prelude::*};
+use bevy::{color::palettes::css::GREEN, prelude::*};
 
 use crate::{
     asset_tracking::LoadResource,
     menus::Menu,
     screens::{
-        gameplay::{
-            enemies::{gen_asteroid, gen_flagship, gen_goon, gen_rammer, EntityAssets},
-            upgrade_menu::generate_buy_menu,
-        },
+        gameplay::enemies::{gen_asteroid, gen_flagship, gen_goon, gen_rammer, EntityAssets},
         Screen,
     },
 };
