@@ -84,7 +84,7 @@ fn apply_movement(
 
     let thrust;
     if let Some(engine_lvl) = upgrades.gotten_upgrades.get(&UpgradeTypes::Thrusters) {
-        thrust = (*engine_lvl as f32) * 10.0;
+        thrust = (*engine_lvl as f32) * 5.0;
     } else {
         thrust = 10.0;
     }

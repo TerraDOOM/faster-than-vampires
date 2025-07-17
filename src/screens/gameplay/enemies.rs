@@ -76,7 +76,7 @@ pub fn gen_enemy_trans(
             (
                 Sprite {
                     image: assets.flagship.clone(),
-                    custom_size: Some(Vec2 { x: 512.0, y: 512.0 }),
+                    custom_size: Some(Vec2 { x: 384.0, y: 384.0 }),
                     ..default()
                 },
                 Collider::circle(128.0),
@@ -91,10 +91,10 @@ pub fn gen_enemy_trans(
                         ShipType::Rammer => assets.ramming_ship.clone(),
                         _ => assets.empire_goon.clone(),
                     },
-                    custom_size: Some(Vec2 { x: 64.0, y: 64.0 }),
+                    custom_size: Some(Vec2 { x: 32.0, y: 32.0 }),
                     ..default()
                 },
-                Collider::circle(32.0),
+                Collider::circle(16.0),
             )
         },
         transform,
@@ -177,7 +177,7 @@ pub fn process_flagship_ai(
             if angvel.0 > 0.1 {
                 angular_damping.0 = 10.0;
             } else {
-                force.apply_impulse(enemy_forward * 900.0);
+                force.apply_impulse(enemy_forward * 400.0);
             }
             continue;
         }
@@ -286,7 +286,7 @@ pub fn process_rammer_ai(
                     angular_damping.0 = 10.0;
                 } else {
                     *ai = RammerAI::Charging;
-                    force.apply_impulse(enemy_forward * 1200.0);
+                    force.apply_impulse(enemy_forward * 600.0);
                 }
                 continue;
             }

@@ -35,13 +35,14 @@ pub(super) fn plugin(app: &mut App) {
     app.add_systems(Update, world_update.in_set(GameplayLogic));
 }
 
-const LVL1X: f32 = 4000.0;
-const LVL2X: f32 = 21000.0;
-const LVL3X: f32 = 35000.0;
-const LVL4X: f32 = 50000.0;
-const LVL5X: f32 = 62000.0;
-const LVL6X: f32 = 75000.0;
-const LVL7X: f32 = 100000.0;
+const LVL1X: f32 = 2000.0;
+const LVL2X: f32 = 16500.0;
+const LVL3X: f32 = 26250.0;
+const LVL4X: f32 = 37500.0;
+const LVL5X: f32 = 46500.0;
+const LVL6X: f32 = 56200.0;
+const LVL7X: f32 = 750000.0;
+const XSIZE: f32 = 850000.0;
 const YMAX: f32 = 15000.0;
 
 #[derive(Resource, Asset, Clone, Reflect)]
@@ -158,8 +159,8 @@ pub fn spawn_level(
         Sprite {
             image: level_assets.background.clone(),
             custom_size: Some(Vec2 {
-                x: LVL7X / 10.0 * 16.0,
-                y: LVL7X / 10.0 * 9.0,
+                x: XSIZE / 10.0 * 16.0,
+                y: XSIZE / 10.0 * 9.0,
             }),
             image_mode: SpriteImageMode::Tiled {
                 tile_x: true,
@@ -260,7 +261,7 @@ pub fn spawn_level(
                 gen_planet(
                     &level_assets,
                     &ui_assets,
-                    Vec2::new(95000.0 * 0.1, 0.0),
+                    Vec2::new(LVL7X * 0.1, 0.0),
                     PlanetType::EarthPlanet,
                     false
                 ),
@@ -338,7 +339,7 @@ pub fn gen_planet(
                 PlanetType::HollowPlanet => assets.planet9.clone(),
                 PlanetType::IcePlanet => assets.planet10.clone(),
             },
-            custom_size: Some(Vec2 { x: 512.0, y: 512.0 }),
+            custom_size: Some(Vec2 { x: 256.0, y: 256.0 }),
             ..default()
         },
         //RigidBody::Static,
@@ -350,7 +351,7 @@ pub fn gen_planet(
                     ShopMarker,
                     Sprite {
                         image: ui_assets.exclamation.clone(),
-                        custom_size: Some(Vec2 { x: 128.0, y: 128.0 }),
+                        custom_size: Some(Vec2 { x: 96.0, y: 96.0 }),
                         ..default()
                     },
                 ),
@@ -610,9 +611,9 @@ pub fn world_update(
     }
 
     //Mini-map
-    let redzone = flagship.translation.x / LVL7X * 100.0;
+    let redzone = flagship.translation.x / XSIZE * 1000.0;
     mini_map_enemy.width = Val::Percent(redzone);
-    mini_map_pos.left = Val::Percent(player.translation.x / LVL7X * 100.0 - redzone);
+    mini_map_pos.left = Val::Percent(player.translation.x / XSIZE * 1000.0 - redzone);
     mini_map_pos.top = Val::Percent(45.0 - player.translation.y / YMAX * 100.0);
 
     //mini_map[0].Node.width = Val::Percent(10.0);
