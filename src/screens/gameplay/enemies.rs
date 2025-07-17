@@ -210,6 +210,7 @@ pub fn gen_shooter(assets: &EntityAssets, position: Vec2) -> impl Bundle {
         ExternalTorque::new(0.0).with_persistence(false),
         LinearDamping(0.1),
         AngularDamping(0.1),
+        Mass(1.0),
         Health(250.0),
     )
 }
