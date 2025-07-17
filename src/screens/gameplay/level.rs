@@ -29,7 +29,7 @@ pub(super) fn plugin(app: &mut App) {
     app.register_type::<UIAssets>();
     app.load_resource::<UIAssets>();
 
-    app.add_systems(Update, world_update.in_set(GameplayLogic));
+    app.add_systems(FixedUpdate, world_update.in_set(GameplayLogic));
 }
 
 const LVL1X: f32 = 4000.0;
@@ -755,7 +755,7 @@ pub fn spawn_enemy(
                          trans: Query<&Transform, With<RammerAI>>,
                          player: Single<Entity, With<Player>>,
                          assets: Res<EntityAssets>| {
-                            commands.trigger_targets(Damage(30), trigger.collider);
+                            commands.trigger_targets(Damage(30.0), trigger.collider);
                             commands.get_entity(trigger.target()).unwrap().despawn();
                             commands.spawn((
                                 trans.get(trigger.target()).unwrap().clone(),
@@ -783,7 +783,7 @@ pub fn spawn_enemy(
                          trans: Query<&Transform, With<RammerAI>>,
                          player: Single<Entity, With<Player>>,
                          assets: Res<EntityAssets>| {
-                            commands.trigger_targets(Damage(30), trigger.collider);
+                            commands.trigger_targets(Damage(30.0), trigger.collider);
                             //commands.get_entity(trigger.target()).unwrap().despawn();
                             commands.spawn((
                                 trans.get(trigger.target()).unwrap().clone(),

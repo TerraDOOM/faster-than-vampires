@@ -88,7 +88,7 @@ pub fn update_upgrades(
     let (ent, upgrades) = upgrades.into_inner();
 
     if upgrades.gotten_upgrades.get(&UpgradeTypes::Emp).is_some() {
-        commands.entity(*flagship_entity).insert(Health(1000));
+        commands.entity(*flagship_entity).insert(Health(1000.0));
         **ost = AudioPlayer::new(weapon_assets.boss_theme.clone());
     }
 
@@ -133,7 +133,7 @@ pub fn update_upgrades(
         .get(&UpgradeTypes::Health)
         .cloned()
         .unwrap_or(0) as i32;
-    hp.0 = 100 * hp_level;
+    hp.0 = 100.0 * hp_level as f64;
 
     player.with_children(|parent| {
         for cannon in cannons {

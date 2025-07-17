@@ -3,7 +3,6 @@ use bevy::prelude::*;
 
 pub mod weapons;
 
-
 use super::{
     enemies::AsteroidAI,
     player::{Player, PlayerAssets},
@@ -27,10 +26,10 @@ pub(super) fn plugin(app: &mut App) {
 }
 
 #[derive(Event)]
-pub struct Damage(pub i32);
+pub struct Damage(pub f64);
 
 #[derive(Component)]
-pub struct Health(pub i32);
+pub struct Health(pub f64);
 
 #[derive(Component)]
 pub struct Dead;
@@ -78,13 +77,13 @@ fn process_asteroid_collisions(
         if damage > 0.0 {
             println!("Emitting damage equal to {}", damage);
         }
-        commands.trigger_targets(Damage(damage as i32), *player);
+        commands.trigger_targets(Damage(damage as f64), *player);
     }
 }
 
 fn remove_dead_enemies(enemies: Query<(Entity, &Health), Without<Player>>, mut commands: Commands) {
     for (enemy, health) in enemies {
-        if health.0 < 0 {
+        if health.0 < 0.0 {
             commands.get_entity(enemy).unwrap().despawn();
         }
     }
@@ -100,7 +99,7 @@ fn process_player_dead(
     };
     let (ent, health, transform) = player.into_inner();
 
-    if health.0 <= 0 {
+    if health.0 <= 0.0 {
         let mut player = commands.get_entity(ent).unwrap();
         player.remove::<Sprite>();
         player.remove::<RigidBody>();

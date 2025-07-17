@@ -61,7 +61,7 @@ pub fn gen_player(max_speed: f32, player_assets: &PlayerAssets) -> impl Bundle {
             ]),
         },
         player_physics_params(),
-        Health(100),
+        Health(100.0),
     )
 }
 
