@@ -86,6 +86,6 @@ pub fn bezier_blend(t: f32) -> f32 {
 
 pub fn in_quad_blend(t: f32) -> f32 {
     //2.0 * t * t
-    let t = t - 0.5;
-    t * (1.0 - t) + 0.75
+    let t = t - 0.2;
+    t * t + 0.64
 }
