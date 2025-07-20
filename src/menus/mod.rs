@@ -29,4 +29,5 @@ pub enum Menu {
     Pause,
     Buy,
     Cutscene,
+    Freecam,
 }

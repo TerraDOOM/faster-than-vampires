@@ -537,7 +537,7 @@ fn animate_laser(
             continue;
         };
 
-        collider.0.translation = Vec3::new(beam.len / 4.0, 0.0, 0.0);
+        collider.0.translation = Vec3::new(beam.len / 2.0, 0.0, 0.0);
         *collider.1 = Collider::rectangle(beam.len, 32.0);
     }
 }
@@ -595,7 +595,6 @@ fn fire_laser(
                         },
                         children![
                             (
-                                RigidBody::Kinematic,
                                 Transform::from_xyz(closest_hit / 2.0, 0.0, 0.0),
                                 Collider::rectangle(closest_hit, 32.0),
                                 CollisionEventsEnabled,

@@ -50,7 +50,7 @@ pub(super) fn plugin(app: &mut App) {
                     .and(not(in_state(Menu::None)))
                     .and(input_just_pressed(KeyCode::KeyP)),
             ),
-            (pause, spawn_pause_overlay, open_buy_menu).run_if(
+            (pause, open_buy_menu).run_if(
                 in_state(Screen::Gameplay)
                     .and(in_state(Menu::None))
                     .and(input_just_pressed(KeyCode::KeyB)),
@@ -108,7 +108,7 @@ fn spawn_pause_overlay(mut commands: Commands) {
         },
         GlobalZIndex(1),
         BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.8)),
-        StateScoped(Pause(true)),
+        StateScoped(Menu::Pause),
     ));
 }
 
