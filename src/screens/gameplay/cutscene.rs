@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{f32::consts::PI, time::Duration};
 
 use crate::{menus::Menu, screens::Screen};
 use avian2d::prelude::LinearVelocity;
@@ -61,19 +61,30 @@ pub fn cutscene_update(
 
     cutsceneprogress: Single<&mut Cutscene, Without<Camera2d>>,
 ) {
-    let progress = (1 as f32
-        - cutsceneprogress.timer.elapsed().as_secs_f32()
-            / cutsceneprogress.timer.duration().as_secs_f32())
-    .clamp(0.0, 1.0);
+    let progress = cutsceneprogress.timer.elapsed().as_secs_f32()
+        / cutsceneprogress.timer.duration().as_secs_f32();
+
+    fn player_pos(t: f32) -> Vec3 {
+        Vec3::new(-390.0 * (1.0 - t), 0.0, 0.0)
+    }
+
+    fn flagship_pos(t: f32) -> Vec3 {
+        Vec3::new(-200.0 * (1.0 - t) - 700.0, 0.0, 0.0)
+    }
 
     let [mut player, mut flagship] = transforms.get_many_mut_inner([*player, *flagship]).unwrap();
-    player.translation = Vec3::new(-390.0 * progress, 0.0, 0.0);
-    flagship.translation = Vec3::new(-200.0 * progress - 700.0, 0.0, 0.0);
-    camera.translation = Vec3::new(
-        flagship.translation.x * (1.0 - in_quad_blend(progress)),
-        0.0,
-        0.0,
+    player.translation = player_pos(progress);
+    flagship.translation = flagship_pos(progress);
+
+    camera.translation = flagship_pos(0.5).lerp(
+        if progress < 0.5 {
+            player_pos(0.0)
+        } else {
+            player_pos(1.0)
+        },
+        double_ease_in_out(progress),
     );
+
     //Planet collision
     //mini_map[0].Node.width = Val::Percent(10.0);
 
@@ -85,16 +96,14 @@ pub fn cutscene_update(
     //Enemy spawning depending on biome
 }
 
-pub fn bezier_blend(t: f32) -> f32 {
-    t * t * (3.0 - 2.0 * t)
+fn ease_in_out(t: f32) -> f32 {
+    -((PI * t).cos() - 1.0) / 2.0
 }
 
-pub fn in_quad_blend(t: f32) -> f32 {
-    let quad1 = |t| 1.0 - t * t * (3.0 - 2.0 * t);
-    let quad2 = |t| t * t;
+fn double_ease_in_out(t: f32) -> f32 {
     if t < 0.5 {
-        quad1(t * 2.0)
+        1.0 - ease_in_out(2.0 * t)
     } else {
-        quad2((t - 0.5) * 2.0)
+        ease_in_out((t - 0.5) * 2.0)
     }
 }

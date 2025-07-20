@@ -3,7 +3,7 @@ use std::{f32::consts::PI, time::Duration};
 use avian2d::prelude::*;
 use bevy::{prelude::*, time::Stopwatch};
 
-use crate::{asset_tracking::LoadResource, screens::Screen, AppSystems};
+use crate::{asset_tracking::LoadResource, screens::Screen, AppSystems, Pause};
 
 use super::{
     animation::AnimatedSprite,
@@ -442,7 +442,12 @@ impl Lifetime {
     }
 
     pub fn plugin(app: &mut App) {
-        app.add_systems(PreUpdate, Lifetime::tick.in_set(AppSystems::TickTimers));
+        app.add_systems(
+            PreUpdate,
+            Lifetime::tick
+                .in_set(AppSystems::TickTimers)
+                .run_if(in_state(Pause(false))),
+        );
         app.add_systems(Last, Lifetime::despawn);
     }
 
