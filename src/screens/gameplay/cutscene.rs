@@ -61,14 +61,19 @@ pub fn cutscene_update(
 
     cutsceneprogress: Single<&mut Cutscene, Without<Camera2d>>,
 ) {
-    let progress = 1 as f32
+    let progress = (1 as f32
         - cutsceneprogress.timer.elapsed().as_secs_f32()
-            / cutsceneprogress.timer.duration().as_secs_f32();
+            / cutsceneprogress.timer.duration().as_secs_f32())
+    .clamp(0.0, 1.0);
 
     let [mut player, mut flagship] = transforms.get_many_mut_inner([*player, *flagship]).unwrap();
     player.translation = Vec3::new(-390.0 * progress, 0.0, 0.0);
     flagship.translation = Vec3::new(-200.0 * progress - 700.0, 0.0, 0.0);
-    camera.translation = Vec3::new(flagship.translation.x * in_quad_blend(progress), 0.0, 0.0);
+    camera.translation = Vec3::new(
+        flagship.translation.x * (1.0 - in_quad_blend(progress)),
+        0.0,
+        0.0,
+    );
     //Planet collision
     //mini_map[0].Node.width = Val::Percent(10.0);
 
@@ -85,7 +90,11 @@ pub fn bezier_blend(t: f32) -> f32 {
 }
 
 pub fn in_quad_blend(t: f32) -> f32 {
-    //2.0 * t * t
-    let t = t - 0.2;
-    t * t + 0.64
+    let quad1 = |t| 1.0 - t * t * (3.0 - 2.0 * t);
+    let quad2 = |t| t * t;
+    if t < 0.5 {
+        quad1(t * 2.0)
+    } else {
+        quad2((t - 0.5) * 2.0)
+    }
 }
