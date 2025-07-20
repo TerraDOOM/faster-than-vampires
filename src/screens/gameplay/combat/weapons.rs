@@ -39,7 +39,7 @@ pub fn plugin(app: &mut App) {
             .in_set(GameplayLogic),
     );
     app.add_systems(
-        FixedUpdate,
+        Update,
         (
             fire_evil_laser,
             fire_laser,
@@ -569,49 +569,48 @@ fn fire_laser(
             // spawn in the laser
             if children.is_none_or(|x| x.is_empty()) {
                 laser_ent.with_children(|parent| {
-                    parent
-                        .spawn((
-                            Transform::from_rotation(Quat::from_rotation_z(PI / 2.0)),
-                            Sprite {
-                                custom_size: Some(Vec2::new(closest_hit, 32.0)),
-                                image: assets.laser_beam.clone(),
-                                rect: Some(Rect {
-                                    min: Vec2::ZERO,
-                                    max: Vec2::splat(128.0),
-                                }),
-                                image_mode: SpriteImageMode::Tiled {
-                                    tile_x: true,
-                                    tile_y: false,
-                                    stretch_value: 10.0,
-                                },
-                                anchor: Anchor::CenterLeft,
-                                ..default()
+                    parent.spawn((
+                        Transform::from_rotation(Quat::from_rotation_z(PI / 2.0)),
+                        Sprite {
+                            custom_size: Some(Vec2::new(closest_hit, 32.0)),
+                            image: assets.laser_beam.clone(),
+                            rect: Some(Rect {
+                                min: Vec2::ZERO,
+                                max: Vec2::splat(128.0),
+                            }),
+                            image_mode: SpriteImageMode::Tiled {
+                                tile_x: true,
+                                tile_y: false,
+                                stretch_value: 10.0,
                             },
-                            LaserBeam { len: closest_hit },
-                            AudioPlayer::new(assets.sfx_laser.clone()),
-                            StateScoped(Screen::Gameplay),
-                            PlaybackSettings {
-                                mode: bevy::audio::PlaybackMode::Loop,
-                                ..default()
-                            },
-                        ))
-                        .with_children(|laser_sprite| {
-                            laser_sprite.spawn((
-                                Transform::from_xyz(closest_hit / 2.0 / 2.0, 0.0, 0.0),
+                            anchor: Anchor::CenterLeft,
+                            ..default()
+                        },
+                        LaserBeam { len: closest_hit },
+                        AudioPlayer::new(assets.sfx_laser.clone()),
+                        StateScoped(Screen::Gameplay),
+                        PlaybackSettings {
+                            mode: bevy::audio::PlaybackMode::Loop,
+                            ..default()
+                        },
+                        children![
+                            (
+                                RigidBody::Kinematic,
+                                Transform::from_xyz(closest_hit / 2.0, 0.0, 0.0),
                                 Collider::rectangle(closest_hit, 32.0),
                                 CollisionEventsEnabled,
                                 ContinuousDamage {
                                     damage_per_frame: laser.damage as f64,
                                 },
                                 Sensor,
-                            ));
-
-                            laser_sprite.spawn((
+                            ),
+                            (
                                 Transform::from_xyz(closest_hit, 0.0, 0.0),
                                 assets.get_laser_hit(),
                                 LaserHit,
-                            ));
-                        });
+                            )
+                        ],
+                    ));
 
                     //Laser muzzle
                     parent.spawn((
@@ -789,7 +788,7 @@ fn fire_evil_laser(
                         ))
                         .with_children(|laser_sprite| {
                             laser_sprite.spawn((
-                                Transform::from_xyz(closest_hit / 2.0 / 2.0, 0.0, 0.0),
+                                Transform::from_xyz(closest_hit / 2.0, 0.0, 0.0),
                                 Collider::rectangle(closest_hit, 128.0),
                                 CollisionEventsEnabled,
                                 ContinuousDamage {
