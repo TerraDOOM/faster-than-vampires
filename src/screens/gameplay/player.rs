@@ -48,7 +48,8 @@ pub fn gen_player(max_speed: f32, player_assets: &PlayerAssets) -> impl Bundle {
             image: player_assets.ducky.clone(),
             ..default()
         },
-        Transform::from_scale(Vec2::splat(1.0).extend(1.0)),
+        Transform::from_scale(Vec2::splat(1.0).extend(1.0))
+            .with_rotation(Quat::from_rotation_z(-PI / 2.0)),
         MovementController {
             max_speed,
             ..default()
@@ -77,6 +78,7 @@ fn player_physics_params() -> impl Bundle {
         MaxLinearSpeed(1000.0),
         MaxAngularSpeed(PI),
         CollisionEventsEnabled,
+        LinearVelocity(Vec2 { x: 10000.0, y: 0.0 }),
     )
 }
 

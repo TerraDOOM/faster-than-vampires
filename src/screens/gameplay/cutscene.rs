@@ -1,6 +1,7 @@
 use std::time::Duration;
 
 use crate::{menus::Menu, screens::Screen};
+use avian2d::prelude::LinearVelocity;
 use bevy::{input::common_conditions::input_just_pressed, prelude::*};
 
 use super::{enemies::FlagshipAI, player::Player, GameplayLogic};
@@ -51,30 +52,40 @@ pub fn tick_cutscene(
 }
 
 pub fn cutscene_update(
-    player: Single<&Transform, (With<Player>, Without<Camera2d>)>,
-    flagship: Single<&Transform, (With<FlagshipAI>, Without<Camera2d>)>,
-    mut next_menu: ResMut<NextState<Menu>>,
-    mut camera: Single<&mut Transform, (With<Camera2d>, Without<FlagshipAI>, Without<Player>)>,
+    transforms: Query<&mut Transform, Without<Camera2d>>,
+    player: Single<Entity, With<Player>>,
+    mut player_physics: Single<&mut LinearVelocity, With<Player>>,
+    flagship: Single<Entity, With<FlagshipAI>>,
+    next_menu: ResMut<NextState<Menu>>,
+    mut camera: Single<&mut Transform, With<Camera2d>>,
 
-    mut cutsceneprogress: Single<
-        &mut Cutscene,
-        (Without<Camera2d>, Without<FlagshipAI>, Without<Player>),
-    >,
+    cutsceneprogress: Single<&mut Cutscene, Without<Camera2d>>,
 ) {
-    let player = player.into_inner();
-
     let progress = 1 as f32
         - cutsceneprogress.timer.elapsed().as_secs_f32()
             / cutsceneprogress.timer.duration().as_secs_f32();
-    dbg!(progress);
-    camera.translation = Vec3::new(-1000.0 * progress, 0.0, 0.0);
 
+    let [mut player, mut flagship] = transforms.get_many_mut_inner([*player, *flagship]).unwrap();
+    player.translation = Vec3::new(-390.0 * progress, 0.0, 0.0);
+    flagship.translation = Vec3::new(-200.0 * progress - 700.0, 0.0, 0.0);
+    camera.translation = Vec3::new(flagship.translation.x * in_quad_blend(progress), 0.0, 0.0);
     //Planet collision
     //mini_map[0].Node.width = Val::Percent(10.0);
 
     if cutsceneprogress.timer.finished() {
+        player_physics.x = 200.0;
         finish_cutscene(next_menu);
     }
 
     //Enemy spawning depending on biome
+}
+
+pub fn bezier_blend(t: f32) -> f32 {
+    t * t * (3.0 - 2.0 * t)
+}
+
+pub fn in_quad_blend(t: f32) -> f32 {
+    //2.0 * t * t
+    let t = t - 0.5;
+    dbg!(t * (1.0 - t) + 0.75)
 }

@@ -108,6 +108,8 @@ pub struct UIAssets {
     pub icon_balls: Handle<Image>,
     #[dependency]
     pub icon_hole: Handle<Image>,
+    #[dependency]
+    pub icon_laser: Handle<Image>,
 }
 
 impl FromWorld for UIAssets {
@@ -127,6 +129,7 @@ impl FromWorld for UIAssets {
             icon_e_field: assets.load_with_settings("images/ui/E-field.png", make_nearest),
             icon_balls: assets.load_with_settings("images/ui/Balls.png", make_nearest),
             icon_hole: assets.load_with_settings("images/ui/Back_hole.png", make_nearest),
+            icon_laser: assets.load_with_settings("images/ui/Icon_Laser.png", make_nearest),
 
             button1: assets.load_with_settings("images/ui/Main_button_clicked.png", make_nearest),
             button2: assets.load_with_settings("images/ui/Main_button_unclicked.png", make_nearest),
@@ -752,6 +755,7 @@ pub fn add_upgrade(
                         UpgradeTypes::Electricity => ui_assets.icon_e_field.clone(),
                         UpgradeTypes::BlackHole => ui_assets.icon_hole.clone(),
                         UpgradeTypes::Orb => ui_assets.icon_balls.clone(),
+                        UpgradeTypes::Laser => ui_assets.icon_laser.clone(),
                         UpgradeTypes::Emp => ui_assets.icon_emp.clone(),
                         _ => ui_assets.icon_hull.clone(),
                     },
