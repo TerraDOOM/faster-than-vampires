@@ -1,5 +1,6 @@
 //! The screen state for the main gameplay.
 mod combat;
+mod cutscene;
 mod enemies;
 mod level;
 mod movement;
@@ -29,6 +30,7 @@ pub(super) fn plugin(app: &mut App) {
         upgrade_menu::plugin,
         combat::plugin,
         animation::plugin,
+        cutscene::plugin,
         PhysicsDebugPlugin::default(),
     ));
 

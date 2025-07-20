@@ -25,6 +25,7 @@ use super::{
     level::{BackgroundAccess, Planet},
     player::Player,
     upgrade_menu::Upgrades,
+    GameplayLogic,
 };
 
 //use super::player::Player;
@@ -33,7 +34,7 @@ pub(super) fn plugin(app: &mut App) {
     app.register_type::<MovementController>();
     app.register_type::<ScreenWrap>();
 
-    app.add_systems(Update, update_camera.run_if(in_state(Screen::Gameplay)));
+    app.add_systems(Update, update_camera.in_set(GameplayLogic));
 
     app.add_systems(
         FixedUpdate,

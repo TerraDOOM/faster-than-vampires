@@ -14,6 +14,7 @@ use crate::{
         gameplay::enemies::{gen_asteroid, gen_flagship, gen_goon, gen_rammer, EntityAssets},
         Screen,
     },
+    Pause,
 };
 
 use super::{
@@ -179,6 +180,8 @@ pub fn spawn_level(
     player_assets: Res<PlayerAssets>,
     entity_assets: Res<EntityAssets>,
     ui_assets: Res<UIAssets>,
+    mut next_menu: ResMut<NextState<Menu>>,
+    mut pausestate: ResMut<NextState<Pause>>,
 ) {
     commands.spawn((
         Name::new("Background"),
@@ -314,6 +317,9 @@ pub fn spawn_level(
     commands.spawn(gen_ui_box(&ui_assets));
     commands.spawn(gen_ui_upgrades(&ui_assets));
     commands.spawn(gen_ui_misc(&ui_assets));
+
+    next_menu.set(Menu::Cutscene);
+    pausestate.set(Pause(true));
 }
 
 #[repr(usize)]
