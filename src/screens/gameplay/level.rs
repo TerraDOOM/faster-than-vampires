@@ -36,8 +36,8 @@ pub(super) fn plugin(app: &mut App) {
 }
 
 const LVL1X: f32 = 2000.0;
-const LVL2X: f32 = 16500.0;
-const LVL3X: f32 = 26250.0;
+const LVL2X: f32 = 20000.0;
+const LVL3X: f32 = 32050.0;
 const LVL4X: f32 = 37500.0;
 const LVL5X: f32 = 46500.0;
 const LVL6X: f32 = 56200.0;
@@ -120,7 +120,7 @@ impl FromWorld for UIAssets {
             icon_background: assets
                 .load_with_settings("images/ui/icon_background.png", make_nearest),
             icon_hull: assets.load_with_settings("images/ui/Hull.png", make_nearest),
-            icon_thruster: assets.load_with_settings("images/ui/rocket2.png", make_nearest),
+            icon_thruster: assets.load_with_settings("images/ui/Icon_Thruster.png", make_nearest),
             icon_cannon: assets.load_with_settings("images/ui/gun2.png", make_nearest),
             icon_emp: assets.load_with_settings("images/ui/EMP.png", make_nearest),
             icon_e_field: assets.load_with_settings("images/ui/E-field.png", make_nearest),

@@ -28,4 +28,5 @@ pub enum Menu {
     Settings,
     Pause,
     Buy,
+    Cutscene,
 }
