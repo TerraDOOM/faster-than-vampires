@@ -22,7 +22,7 @@ pub(super) fn plugin(app: &mut App) {
         Update,
         go_back.run_if(in_state(Menu::Buy).and(input_just_pressed(KeyCode::Escape))),
     );
-    app.add_systems(Update, update_upgrades.in_set(GameplayLogic));
+    app.add_systems(OnExit(Menu::Buy), update_upgrades);
 
     app.add_systems(Update, button_system.run_if(in_state(Menu::Buy)));
     app.add_systems(

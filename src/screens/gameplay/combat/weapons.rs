@@ -29,7 +29,7 @@ pub fn plugin(app: &mut App) {
     app.load_resource::<WeaponAssets>();
 
     app.add_systems(
-        Update,
+        FixedUpdate,
         (
             fire_cannon,
             rotate_orbs,
@@ -39,7 +39,7 @@ pub fn plugin(app: &mut App) {
             .in_set(GameplayLogic),
     );
     app.add_systems(
-        Update,
+        FixedUpdate,
         (
             fire_evil_laser,
             fire_laser,
@@ -761,7 +761,9 @@ fn fire_evil_laser(
                 laser_ent.with_children(|parent| {
                     parent
                         .spawn((
-                            Transform::from_rotation(Quat::from_rotation_z(PI / 2.0)),
+                            Transform::from_rotation(Quat::from_rotation_z(
+                                PI / 2.0 + laser.current_angle,
+                            )),
                             Sprite {
                                 custom_size: Some(Vec2::new(closest_hit, 512.0)),
                                 image: assets.evil_laser.clone(),
