@@ -761,7 +761,8 @@ fn fire_evil_laser(
                         .spawn((
                             Transform::from_rotation(Quat::from_rotation_z(
                                 PI / 2.0 + laser.current_angle,
-                            )),
+                            ))
+                            .with_translation(Vec3::new(0.0, 0.0, -2.0)),
                             Sprite {
                                 custom_size: Some(Vec2::new(closest_hit, 512.0)),
                                 image: assets.evil_laser.clone(),

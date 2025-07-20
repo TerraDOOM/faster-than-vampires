@@ -189,7 +189,7 @@ pub fn spawn_level(
     commands.spawn((
         Name::new("Background"),
         StateScoped(Screen::Gameplay),
-        Transform::from_xyz(0.0, 0.0, -1.0),
+        Transform::from_xyz(0.0, 0.0, -1000.0),
         BackgroundAccess,
         Sprite {
             image: level_assets.background.clone(),
