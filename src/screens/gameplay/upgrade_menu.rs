@@ -11,12 +11,16 @@ use super::{
     },
     enemies::FlagshipAI,
     level::{self, MainOST, PlanetType, UIAssets, UpgradeBox, UpgradeTile, VisistedPlanet},
+    pause,
     player::Player,
     GameplayLogic,
 };
 
 pub(super) fn plugin(app: &mut App) {
-    app.add_systems(OnEnter(Menu::Buy), generate_buy_menu.in_set(GameplayLogic));
+    app.add_systems(
+        OnEnter(Menu::Buy),
+        (generate_buy_menu, pause).in_set(GameplayLogic),
+    );
 
     app.add_systems(
         Update,
@@ -256,24 +260,29 @@ pub fn generate_buy_menu(
             GlobalZIndex(2),
             children![
                 (
-                    Text::new("Shop"),
+                    Text::new(match next_planet.0 {
+                        PlanetType::LavaPlanet => "Captain of The Swallow, we welcome you to Ebounus. Your ship, with its experimental powersource is our last hope in this time of duress. Every Empire stronghold will do it's best to help you improve the ship and find a way to damage the impervios flagship. Good luck Captain!",
+                        PlanetType::LavaPlanet => "",
+                        _ => "Shop"
+                    }),
                     TextFont {
                         font: ui_assets.font.clone(),
-                        font_size: 48.0,
+                        font_size: 24.0,
                         ..default()
                     },
                     TextColor(Color::srgb(1.0, 1.0, 1.0)),
                     Node {
-                        width: Val::Percent(100.0),
-                        height: Val::Percent(25.0),
-                        top: Val::Percent(0.0),
+                        width: Val::Percent(92.0),
+                        height: Val::Percent(40.0),
+                        top: Val::Percent(4.0),
+                        left:Val::Percent(4.0),
                         ..default()
                     },
                 ),
                 (
                     Node {
                         width: Val::Percent(100.0),
-                        height: Val::Percent(75.0),
+                        height: Val::Percent(60.0),
                         flex_direction: FlexDirection::Row,
                         ..default()
                     },
@@ -352,7 +361,7 @@ pub fn gen_shop_item(
                 UpgradeTypes::Thrusters => format!("Lvl.{} Thruster", upgrade_level),
                 UpgradeTypes::Electricity  => format!("Lvl.{} HV-field", upgrade_level),
                 UpgradeTypes::Laser  => format!("Lvl.{} Laser", upgrade_level),
-                UpgradeTypes::Health  => format!("Lvl.{} Shield", upgrade_level),
+                UpgradeTypes::Health  => format!("Lvl.{} Hull", upgrade_level),
                 UpgradeTypes::Orb => format!("Lvl.{} ORB", upgrade_level),
                 UpgradeTypes::BlackHole => format!("Lvl.{} Black Hole", upgrade_level),
                 _ => "unknown upgrade".to_string(),
@@ -375,7 +384,7 @@ pub fn gen_shop_item(
                       Text::new(match upgrade_type {
                           UpgradeTypes::Cannon => "The Cannon shoots a projectile towards the nearest item. Upgrades increase the amount of cannons.".to_string(),
                           UpgradeTypes::Thrusters => "The thruster moves the ship. Upgrades increase acceleration.".to_string(),
-                          UpgradeTypes::Health => "The shield protects the ship from damage (health). Upgrades increase the ships health.".to_string(),
+                          UpgradeTypes::Health => "The improved hull protects the ship from damage (health). Upgrades increase the ships health.".to_string(),
                           UpgradeTypes::Electricity  => "The High Voltage Field generator creates a nearby circle which damages enemies it touches. Upgrades increase the radius and damge.".to_string(),
                           UpgradeTypes::Orb  => "The Original Rotating Ball, or ORB for short spinns around the ship damaging enemies. Upgrades increase ORB count and ORB speed.".to_string(),
                           UpgradeTypes::Laser  => "The photon cannon shoots a concentrated laser beam ahead of the ship dealing damage in bursts. Upgrades increases the shooting time".to_string(),

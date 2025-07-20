@@ -37,6 +37,13 @@ pub(super) fn plugin(app: &mut App) {
     app.add_systems(Update, update_camera.in_set(GameplayLogic));
 
     app.add_systems(
+        Update,
+        update_paralax
+            .after(update_camera)
+            .run_if(in_state(Screen::Gameplay)),
+    );
+
+    app.add_systems(
         FixedUpdate,
         (apply_movement, apply_screen_wrap)
             .chain()
@@ -120,8 +127,6 @@ fn update_camera(
     mut set: ParamSet<(
         Query<&mut Transform, With<Camera2d>>,
         Query<&Transform, With<Player>>,
-        Query<&mut Transform, With<BackgroundAccess>>,
-        Query<(&mut Transform, &Planet)>,
     )>,
 ) {
     let p = set.p1().single_inner().unwrap().translation.xy();
@@ -133,16 +138,32 @@ fn update_camera(
         camera.translation.z
     };
 
-    let camera_pos = Vec3::new(p.x, p.y, camera_layer);
-    {
-        let mut p2 = set.p2();
-        let mut background = p2.single_mut().unwrap();
-        background.translation = camera_pos * 0.95 - Vec3::new(0.0, 0.0, 5.0);
-    }
+    // let camera_pos = Vec3::new(p.x, p.y, camera_layer);
+    //     {
+    //         let mut p2 = set.p2();
+    //         let mut background = p2.single_mut().unwrap();
+    //         //    background.translation = camera_pos * 0.95 - Vec3::new(0.0, 0.0, 5.0);
+    //     }
+    //
+}
+
+fn update_paralax(
+    camera_pos: Single<
+        &mut Transform,
+        (With<Camera2d>, Without<Planet>, Without<BackgroundAccess>),
+    >,
+    planets: Query<(&mut Transform, &Planet), (Without<Camera2d>, Without<BackgroundAccess>)>,
+    mut background: Single<
+        &mut Transform,
+        (With<BackgroundAccess>, Without<Camera2d>, Without<Planet>),
+    >,
+) {
+    //background paralaxing
+    background.translation = camera_pos.translation * 0.95 - Vec3::new(0.0, 0.0, 5.0);
 
     //Planet paralaxing
-    for (mut transform, init_position) in set.p3().iter_mut() {
+    for (mut transform, init_position) in planets {
         transform.translation =
-            Vec3::new(init_position.x, init_position.y, -0.5) + camera_pos * 0.9;
+            Vec3::new(init_position.x, init_position.y, -0.5) + camera_pos.translation * 0.9;
     }
 }

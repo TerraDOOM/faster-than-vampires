@@ -886,11 +886,12 @@ pub fn world_update(
     //Planet collision
     for (planet_transform, mut planet, entity) in planets {
         if !planet.has_shopped
-            && (player.translation - planet_transform.translation).length() < 200.0
+            && (player.translation - planet_transform.translation).length() < 120.0
         {
             planet.has_shopped = true;
             next_planet.0 = planet.planet_type;
             commands.entity(entity).despawn_related::<Children>();
+
             next_menu.set(Menu::Buy);
         }
     }

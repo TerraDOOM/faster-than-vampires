@@ -4,7 +4,7 @@ use crate::{menus::Menu, screens::Screen};
 use avian2d::prelude::LinearVelocity;
 use bevy::{input::common_conditions::input_just_pressed, prelude::*};
 
-use super::{enemies::FlagshipAI, player::Player, GameplayLogic};
+use super::{enemies::FlagshipAI, level::Planet, player::Player, GameplayLogic};
 
 pub(super) fn plugin(app: &mut App) {
     app.add_systems(
@@ -87,5 +87,5 @@ pub fn bezier_blend(t: f32) -> f32 {
 pub fn in_quad_blend(t: f32) -> f32 {
     //2.0 * t * t
     let t = t - 0.5;
-    dbg!(t * (1.0 - t) + 0.75)
+    t * (1.0 - t) + 0.75
 }
